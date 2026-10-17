@@ -12,30 +12,35 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:textSize="13sp"
-            android:textColor="@color/led"
-            android:text="BUS CATCH" />
-        <TextView
-            android:id="@+id/updated"
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:layout_marginStart="8dp"
-            android:textSize="11sp"
-            android:textColor="@color/dim"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:text="" />
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/stopName"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textStyle="bold"
+                android:textSize="14sp"
+                android:textColor="@color/paper"
+                android:maxLines="1"
+                android:ellipsize="end"
+                android:text="Bus Catch" />
+            <TextView
+                android:id="@+id/updated"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textSize="11sp"
+                android:textColor="@color/dim"
+                android:maxLines="1"
+                android:text="" />
+        </LinearLayout>
         <ImageView
             android:id="@+id/refresh"
-            android:layout_width="32dp"
-            android:layout_height="32dp"
-            android:padding="6dp"
+            android:layout_width="36dp"
+            android:layout_height="36dp"
+            android:padding="7dp"
             android:src="@drawable/ic_refresh"
             android:contentDescription="Refresh" />
     </LinearLayout>
@@ -48,7 +53,7 @@
         android:textSize="13sp"
         android:textColor="@color/paper"
         android:visibility="gone"
-        android:text="No buses yet. Tap to open Bus Catch and add your stop." />
+        android:text="" />
 
     <LinearLayout
         android:id="@+id/row1"
@@ -56,54 +61,29 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp">
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp">
         <TextView
             android:id="@+id/svc1"
             android:layout_width="64dp"
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:textStyle="bold"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textColor="@color/led"
-            android:maxLines="3"
+            android:maxLines="1"
             android:text="961" />
-        <LinearLayout
+        <TextView
+            android:id="@+id/next1"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:id="@+id/name1"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/dim"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:text="Stop" />
-            <TextView
-                android:id="@+id/next1"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:textSize="14sp"
-                android:textColor="@color/paper"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:text="--" />
-        </LinearLayout>
-        <TextView
-            android:id="@+id/leave1"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:textColor="@color/led"
+            android:textSize="15sp"
+            android:textColor="@color/paper"
             android:maxLines="1"
-            android:text="" />
+            android:ellipsize="end"
+            android:text="--" />
     </LinearLayout>
     <LinearLayout
         android:id="@+id/row2"
@@ -111,54 +91,29 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp">
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp">
         <TextView
             android:id="@+id/svc2"
             android:layout_width="64dp"
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:textStyle="bold"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textColor="@color/led"
-            android:maxLines="3"
+            android:maxLines="1"
             android:text="961" />
-        <LinearLayout
+        <TextView
+            android:id="@+id/next2"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:id="@+id/name2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/dim"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:text="Stop" />
-            <TextView
-                android:id="@+id/next2"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:textSize="14sp"
-                android:textColor="@color/paper"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:text="--" />
-        </LinearLayout>
-        <TextView
-            android:id="@+id/leave2"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:textSize="14sp"
-            android:textColor="@color/led"
+            android:textSize="15sp"
+            android:textColor="@color/paper"
             android:maxLines="1"
-            android:text="" />
+            android:ellipsize="end"
+            android:text="--" />
     </LinearLayout>
     <LinearLayout
         android:id="@+id/row3"
@@ -166,53 +121,71 @@
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical"
-        android:paddingTop="6dp"
-        android:paddingBottom="6dp">
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp">
         <TextView
             android:id="@+id/svc3"
             android:layout_width="64dp"
             android:layout_height="wrap_content"
             android:fontFamily="monospace"
             android:textStyle="bold"
-            android:textSize="24sp"
+            android:textSize="22sp"
             android:textColor="@color/led"
-            android:maxLines="3"
+            android:maxLines="1"
             android:text="961" />
-        <LinearLayout
+        <TextView
+            android:id="@+id/next3"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:orientation="vertical">
-            <TextView
-                android:id="@+id/name3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:textSize="12sp"
-                android:textColor="@color/dim"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:text="Stop" />
-            <TextView
-                android:id="@+id/next3"
-                android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:fontFamily="monospace"
-                android:textSize="14sp"
-                android:textColor="@color/paper"
-                android:maxLines="1"
-                android:ellipsize="end"
-                android:text="--" />
-        </LinearLayout>
+            android:fontFamily="monospace"
+            android:textSize="15sp"
+            android:textColor="@color/paper"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="--" />
+    </LinearLayout>
+    <LinearLayout
+        android:id="@+id/row4"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:paddingTop="3dp"
+        android:paddingBottom="3dp">
         <TextView
-            android:id="@+id/leave3"
-            android:layout_width="wrap_content"
+            android:id="@+id/svc4"
+            android:layout_width="64dp"
             android:layout_height="wrap_content"
-            android:layout_marginStart="8dp"
             android:fontFamily="monospace"
             android:textStyle="bold"
-            android:textSize="14sp"
+            android:textSize="22sp"
             android:textColor="@color/led"
             android:maxLines="1"
-            android:text="" />
+            android:text="961" />
+        <TextView
+            android:id="@+id/next4"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:fontFamily="monospace"
+            android:textSize="15sp"
+            android:textColor="@color/paper"
+            android:maxLines="1"
+            android:ellipsize="end"
+            android:text="--" />
     </LinearLayout>
+
+    <TextView
+        android:id="@+id/leave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:fontFamily="monospace"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:textColor="@color/led"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="" />
 </LinearLayout>

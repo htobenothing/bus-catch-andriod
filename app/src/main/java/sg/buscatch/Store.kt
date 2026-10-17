@@ -125,6 +125,15 @@ object Store {
     }
     fun lastOk(ctx: Context): Boolean = prefs(ctx).getBoolean("last_ok", true)
 
+    // ---- which stop each home-screen widget shows ----
+    fun widgetRoute(ctx: Context, widgetId: Int): String? = prefs(ctx).getString("widget_$widgetId", null)
+    fun setWidgetRoute(ctx: Context, widgetId: Int, routeId: String) {
+        prefs(ctx).edit().putString("widget_$widgetId", routeId).apply()
+    }
+    fun clearWidget(ctx: Context, widgetId: Int) {
+        prefs(ctx).edit().remove("widget_$widgetId").apply()
+    }
+
     // ---- alert bookkeeping: one "leave now" per route per day ----
     fun alertedToday(ctx: Context, routeId: String): Boolean =
         prefs(ctx).getString("alerted_$routeId", null) == LocalDate.now().toString()
