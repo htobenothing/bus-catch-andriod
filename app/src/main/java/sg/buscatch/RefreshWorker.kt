@@ -75,6 +75,7 @@ class RefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
             if (routes.isNotEmpty()) Store.setLastRefresh(ctx, allOk)
 
             handleAlerts(ctx, routes)
+            Updater.dailyCheck(ctx)
             BusWidget.updateAll(ctx)
 
             if (routes.any { it.alertOn && it.inWindow(leadMin = WINDOW_LEAD_MIN) && !Store.alertedToday(ctx, it.id) }) {

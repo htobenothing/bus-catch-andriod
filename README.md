@@ -9,6 +9,11 @@ Live Singapore bus arrivals on your home screen, plus a "leave now" alert timed 
 - **Live data** from LTA DataMall via arrivelah (no API key needed). Shows crowding and whether the bus is GPS-tracked.
 - Refreshes every 15 minutes in the background and about every minute while an alert window is active.
 
+## Versions and updates
+The version lives in `version.properties` (semantic versioning, see CHANGELOG.md). Pushing a new version publishes a GitHub Release `vX.Y.Z`; the app checks for it, shows **Update now**, downloads it and opens the installer. Pushes without a version bump only build.
+
+Releases are signed with `signing/buscatch-release.jks`. Its password must be saved as the `KEYSTORE_PASSWORD` Actions secret.
+
 ## Build the APK (no Android Studio needed)
 1. Create a new repository on GitHub and upload this folder's contents (or push with git).
 2. Open the repo's **Actions** tab. The "Build APK" workflow runs automatically on each push (or click **Run workflow**).

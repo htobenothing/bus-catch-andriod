@@ -38,6 +38,9 @@ class MainActivity : Activity() {
     private lateinit var list: LinearLayout
     private lateinit var status: TextView
     private lateinit var permBox: LinearLayout
+    private lateinit var updateBox: LinearLayout
+    private var pendingApk: java.io.File? = null
+    private var downloading = false
 
     private val BG = Color.parseColor("#0D110F")
     private val PANEL = Color.parseColor("#141A16")
@@ -77,6 +80,9 @@ class MainActivity : Activity() {
         status = TextView(this).apply { textSize = 13f; setTextColor(DIM); setPadding(0, dp(6), 0, dp(12)) }
         root.addView(status)
 
+        updateBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        root.addView(updateBox)
+
         permBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         root.addView(permBox)
 
@@ -96,6 +102,12 @@ class MainActivity : Activity() {
             textSize = 12f; setTextColor(DIM); setPadding(0, dp(16), 0, 0)
         })
 
+        root.addView(Button(this).apply {
+            text = "Bus Catch v${Updater.current} · Check for updates"; isAllCaps = false
+            textSize = 12f
+            setOnClickListener { checkForUpdate(manual = true) }
+        }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
+
         setContentView(ScrollView(this).apply { setBackgroundColor(BG); addView(root) })
     }
 
@@ -103,6 +115,14 @@ class MainActivity : Activity() {
         super.onResume()
         renderPermissions()
         render()
+        // Back from "allow installs from this app": continue the update
+        pendingApk?.let { apk ->
+            if (Build.VERSION.SDK_INT < 26 || packageManager.canRequestPackageInstalls()) {
+                if (Updater.install(this, apk)) pendingApk = null
+            }
+        }
+        renderUpdate()
+        if (System.currentTimeMillis() - Updater.lastChecked(this) > 6 * 3600_000L) checkForUpdate(manual = false)
         ui.post(poll)
         ui.postDelayed(tick, 5_000)
     }
@@ -254,6 +274,69 @@ class MainActivity : Activity() {
         text = label; isAllCaps = false
         setOnClickListener { onClick() }
         layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }
+    }
+
+    // ---------- updates ----------
+
+    private fun checkForUpdate(manual: Boolean) {
+        if (manual) toast("Checking for updates…")
+        io.execute {
+            val r = Updater.check(this)
+            ui.post {
+                renderUpdate()
+                if (manual && r == null) toast("You're on the latest version (v${Updater.current}).")
+            }
+        }
+    }
+
+    private fun renderUpdate() {
+        updateBox.removeAllViews()
+        val r = Updater.known(this) ?: return
+        val box = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(12), dp(16), dp(12))
+            background = rounded(Color.parseColor("#1E2A22"))
+        }
+        box.addView(TextView(this).apply {
+            text = "Version ${r.version} is available (you have ${Updater.current})"
+            textSize = 15f; setTextColor(GREEN); setTypeface(typeface, Typeface.BOLD)
+        })
+        if (r.notes.isNotBlank()) box.addView(TextView(this).apply {
+            text = r.notes.lines().filter { it.isNotBlank() }.take(5).joinToString("\n")
+            textSize = 13f; setTextColor(PAPER); setPadding(0, dp(4), 0, dp(4))
+        })
+        val btn = Button(this).apply {
+            text = if (downloading) "Downloading…" else "Update now"; isAllCaps = false
+            isEnabled = !downloading
+        }
+        btn.setOnClickListener { startUpdate(r, btn) }
+        box.addView(btn)
+        updateBox.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
+    }
+
+    private fun startUpdate(r: Updater.Release, btn: Button) {
+        downloading = true
+        btn.isEnabled = false; btn.text = "Downloading 0%"
+        io.execute {
+            try {
+                val apk = Updater.download(this, r) { pct -> ui.post { btn.text = "Downloading $pct%" } }
+                ui.post {
+                    downloading = false
+                    btn.isEnabled = true; btn.text = "Install update"
+                    btn.setOnClickListener { if (!Updater.install(this, apk)) pendingApk = apk }
+                    if (!Updater.install(this, apk)) {
+                        pendingApk = apk
+                        toast("Allow Bus Catch to install updates, then come back.")
+                    }
+                }
+            } catch (e: Exception) {
+                ui.post {
+                    downloading = false
+                    btn.isEnabled = true; btn.text = "Try again"
+                    toast("Couldn't download the update. Check your connection and try again.")
+                }
+            }
+        }
     }
 
     // ---------- add / edit ----------

@@ -12,6 +12,31 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+
+      - name: Read version
+        id: ver
+        run: |
+          V=$(grep '^VERSION_NAME=' version.properties | cut -d= -f2 | tr -d '[:space:]')
+          echo "version=$V" >> "$GITHUB_OUTPUT"
+          if git ls-remote --exit-code --tags origin "refs/tags/v$V" >/dev/null 2>&1; then
+            echo "exists=true" >> "$GITHUB_OUTPUT"
+            echo "v$V is already released; this run only builds."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Check signing password
+        id: sign
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
+        run: |
+          if [ -z "$KEYSTORE_PASSWORD" ]; then
+            echo "ok=false" >> "$GITHUB_OUTPUT"
+            echo "::warning::KEYSTORE_PASSWORD secret is missing: building with a throwaway key and skipping the release."
+          else
+            echo "ok=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
@@ -21,20 +46,33 @@ jobs:
           gradle-version: "8.7"
       - name: Accept SDK licenses
         run: yes | "$ANDROID_HOME/cmdline-tools/latest/bin/sdkmanager" --licenses > /dev/null || true
+
       - name: Build release APK
+        env:
+          KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
         run: gradle :app:assembleRelease --no-daemon
+
       - name: Rename
         run: cp app/build/outputs/apk/release/app-release.apk BusCatch.apk
+
       - uses: actions/upload-artifact@v4
         with:
-          name: BusCatch-apk
+          name: BusCatch-${{ steps.ver.outputs.version }}
           path: BusCatch.apk
-      - name: Publish to Releases
-        if: github.ref == 'refs/heads/main'
+
+      - name: Release notes from CHANGELOG
+        if: github.ref == 'refs/heads/main' && steps.ver.outputs.exists == 'false' && steps.sign.outputs.ok == 'true'
+        run: |
+          V=${{ steps.ver.outputs.version }}
+          awk -v v="## $V" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
+          printf '\n---\nInstall: open BusCatch.apk on your Android phone. Already have the app? Tap "Update" in Bus Catch instead.\n' >> notes.md
+
+      - name: Publish release
+        if: github.ref == 'refs/heads/main' && steps.ver.outputs.exists == 'false' && steps.sign.outputs.ok == 'true'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: build-${{ github.run_number }}
-          name: Bus Catch build ${{ github.run_number }}
-          body: Download BusCatch.apk below and open it on your Android phone to install.
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: Bus Catch v${{ steps.ver.outputs.version }}
+          body_path: notes.md
           make_latest: true
           files: BusCatch.apk
