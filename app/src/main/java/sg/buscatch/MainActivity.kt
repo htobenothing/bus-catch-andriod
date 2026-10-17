@@ -91,7 +91,7 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(10) })
         val titles = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         titles.addView(TextView(this).apply {
-            text = if (pal.puppy) "BUS CATCH 🐾" else "BUS CATCH"; typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            text = if (pal.puppy) "BUS PUP 🐾" else "BUS PUP"; typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
             textSize = 24f; setTextColor(LED)
         })
         status = TextView(this).apply { textSize = 12f; setTextColor(DIM) }
@@ -364,8 +364,8 @@ class MainActivity : Activity() {
 
     private fun widgetsContent(): Array<View> = arrayOf(
         sectionTitle("Add a widget"),
-        panel(para("1.  Long-press an empty spot on your home screen\n2.  Tap Widgets and find Bus Catch\n3.  Drag a widget out. The Stop widget asks which stop to show.")),
-        sectionTitle("Bus Catch · Stop"),
+        panel(para("1.  Long-press an empty spot on your home screen\n2.  Tap Widgets and find Bus Pup\n3.  Drag a widget out. The Stop widget asks which stop to show.")),
+        sectionTitle("Bus Pup · Stop"),
         panel(
             para("Shows one stop. Choose ⟳ Auto when placing it and it switches to whichever stop's alert time is nearest, so one widget covers all your stops."),
             para("🔔  Tap the bell to switch that stop's leave alert on or off.", LED),
@@ -375,7 +375,7 @@ class MainActivity : Activity() {
             },
             para("Long-press the widget to switch between Auto and a fixed stop (Android 12+).", DIM, 13f),
         ),
-        sectionTitle("Bus Catch · All stops"),
+        sectionTitle("Bus Pup · All stops"),
         panel(para("Every saved stop in one scrolling list, with when to leave and the next buses. No setup needed.")),
         sectionTitle("Reading the colours"),
         panel(
@@ -473,7 +473,7 @@ class MainActivity : Activity() {
 
         box.addView(sectionTitle("About"))
         box.addView(panel(
-            para("Bus Catch v${Updater.current}"),
+            para("Bus Pup v${Updater.current}"),
             para("Live arrivals from LTA DataMall via arrivelah. Refreshes every 15 minutes, and about every minute during an alert window.", DIM, 13f),
             para("github.com/htobenothing/bus-catch-andriod", DIM, 12f).apply { setTextIsSelectable(true) },
         ))
@@ -522,7 +522,7 @@ class MainActivity : Activity() {
                     b.setOnClickListener { if (!Updater.install(this, apk)) pendingApk = apk }
                     if (!Updater.install(this, apk)) {
                         pendingApk = apk
-                        toast("Allow Bus Catch to install updates, then come back.")
+                        toast("Allow Bus Pup to install updates, then come back.")
                     }
                 }
             } catch (e: Exception) {

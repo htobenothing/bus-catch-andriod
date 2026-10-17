@@ -75,7 +75,7 @@
             android:textColor="@color/dim"
             android:maxLines="1"
             android:ellipsize="end"
-            android:text="Bus Catch" />
+            android:text="Bus Pup" />
     </LinearLayout>
 
     <ImageView

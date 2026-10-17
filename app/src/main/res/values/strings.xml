@@ -1,7 +1,7 @@
 <resources>
-    <string name="app_name">Bus Catch</string>
+    <string name="app_name">Bus Pup</string>
     <string name="widget_desc">Live arrivals at one of your stops and when to leave home</string>
-    <string name="stop_widget_label">Bus Catch · Stop</string>
-    <string name="all_widget_label">Bus Catch · All stops</string>
+    <string name="stop_widget_label">Bus Pup · Stop</string>
+    <string name="all_widget_label">Bus Pup · All stops</string>
     <string name="all_widget_desc">Every saved stop with its next buses and when to leave</string>
 </resources>

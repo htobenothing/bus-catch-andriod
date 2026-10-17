@@ -48,11 +48,11 @@ class WidgetConfigActivity : Activity() {
 
         if (routes.isEmpty()) {
             box.addView(TextView(this).apply {
-                text = "You haven't saved any stops yet. Add one in Bus Catch, then come back here."
+                text = "You haven't saved any stops yet. Add one in Bus Pup, then come back here."
                 textSize = 14f
             })
             box.addView(Button(this).apply {
-                text = "Open Bus Catch"; isAllCaps = false
+                text = "Open Bus Pup"; isAllCaps = false
                 setOnClickListener { startActivity(Intent(this@WidgetConfigActivity, MainActivity::class.java)) }
             })
         } else {

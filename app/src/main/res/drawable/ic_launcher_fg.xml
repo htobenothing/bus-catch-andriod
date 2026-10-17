@@ -1,7 +1,57 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Bus Pup launcher icon: front of a bus with the puppy in the windscreen -->
 <vector xmlns:android="http://schemas.android.com/apk/res/android"
     android:width="108dp" android:height="108dp" android:viewportWidth="108" android:viewportHeight="108">
-    <group android:scaleX="2" android:scaleY="2" android:translateX="30" android:translateY="30">
-        <path android:fillColor="#FFB21A"
-            android:pathData="M4,16c0,0.88 0.39,1.67 1,2.22V20c0,0.55 0.45,1 1,1h1c0.55,0 1,-0.45 1,-1v-1h8v1c0,0.55 0.45,1 1,1h1c0.55,0 1,-0.45 1,-1v-1.78c0.61,-0.55 1,-1.34 1,-2.22V6c0,-3.5 -3.58,-4 -8,-4s-8,0.5 -8,4v10zM7.5,17c-0.83,0 -1.5,-0.67 -1.5,-1.5S6.67,14 7.5,14s1.5,0.67 1.5,1.5S8.33,17 7.5,17zM16.5,17c-0.83,0 -1.5,-0.67 -1.5,-1.5s0.67,-1.5 1.5,-1.5 1.5,0.67 1.5,1.5 -0.67,1.5 -1.5,1.5zM18,11H6V6h12v5z" />
+    <!-- scaled to sit inside the 72dp visible circle -->
+    <group android:scaleX="0.75" android:scaleY="0.75" android:translateX="13.5" android:translateY="13.5">
+    <!-- wheels -->
+    <path android:fillColor="#4A3426" android:pathData="M33,80 h10 v8 a2,2 0 0,1 -2,2 h-6 a2,2 0 0,1 -2,-2 Z" />
+    <path android:fillColor="#4A3426" android:pathData="M65,80 h10 v8 a2,2 0 0,1 -2,2 h-6 a2,2 0 0,1 -2,-2 Z" />
+    <!-- body -->
+    <path android:fillColor="#E07A2E" android:pathData="M36,24 h36 a8,8 0 0,1 8,8 v44 a6,6 0 0,1 -6,6 h-40 a6,6 0 0,1 -6,-6 v-44 a8,8 0 0,1 8,-8 Z" />
+    <!-- route sign -->
+    <path android:fillColor="#4A3426" android:pathData="M42,27.5 h24 a1.5,1.5 0 0,1 1.5,1.5 v3 a1.5,1.5 0 0,1 -1.5,1.5 h-24 a1.5,1.5 0 0,1 -1.5,-1.5 v-3 a1.5,1.5 0 0,1 1.5,-1.5 Z" />
+    <path android:fillColor="#FFB21A" android:pathData="M45,29.6 h18 v1.8 h-18 Z" />
+    <!-- windscreen with the puppy -->
+    <group>
+        <clip-path android:pathData="M35.5,37 h37 a2.5,2.5 0 0,1 2.5,2.5 v21 a2.5,2.5 0 0,1 -2.5,2.5 h-37 a2.5,2.5 0 0,1 -2.5,-2.5 v-21 a2.5,2.5 0 0,1 2.5,-2.5 Z" />
+        <path android:fillColor="#BFE6F2" android:pathData="M33,37 h42 v26 h-42 Z" />
+        <group android:scaleX="0.66" android:scaleY="0.66" android:translateX="38.2" android:translateY="35.6">
+            <path android:fillColor="#A8693F"
+        android:pathData="M13,13 C6,12 3,22 5,29 C6.5,33.5 11,33 12.5,28 C13.5,24 14.5,18 15.5,15 Z" />
+            <path android:fillColor="#A8693F"
+        android:pathData="M35,13 C42,12 45,22 43,29 C41.5,33.5 37,33 35.5,28 C34.5,24 33.5,18 32.5,15 Z" />
+            <path android:fillColor="#F5D7B0"
+        android:pathData="M11,26 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 Z" />
+            <path android:fillColor="#C68B59"
+        android:pathData="M25.5,22.5 a4.5,4 0 1,0 9,0 a4.5,4 0 1,0 -9,0 Z" />
+            <path android:fillColor="#FFF6EA"
+        android:pathData="M16.5,31.5 a7.5,5.5 0 1,0 15,0 a7.5,5.5 0 1,0 -15,0 Z" />
+            <path android:fillColor="#F7A9B5"
+        android:pathData="M13.8,29 a1.8,1.4 0 1,0 3.6,0 a1.8,1.4 0 1,0 -3.6,0 Z" />
+            <path android:fillColor="#F7A9B5"
+        android:pathData="M30.6,29 a1.8,1.4 0 1,0 3.6,0 a1.8,1.4 0 1,0 -3.6,0 Z" />
+            <path android:fillColor="#3B2A20"
+        android:pathData="M17,23.5 a2.2,2.4 0 1,0 4.4,0 a2.2,2.4 0 1,0 -4.4,0 Z" />
+            <path android:fillColor="#3B2A20"
+        android:pathData="M27.8,23.5 a2.2,2.4 0 1,0 4.4,0 a2.2,2.4 0 1,0 -4.4,0 Z" />
+            <path android:fillColor="#FFFFFF"
+        android:pathData="M18.6,22.6 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0 Z" />
+            <path android:fillColor="#FFFFFF"
+        android:pathData="M29.4,22.6 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0 Z" />
+            <path android:fillColor="#F07C8A"
+        android:pathData="M22.3,33 C22.3,36.6 25.7,36.6 25.7,33 Z" />
+            <path android:fillColor="#3B2A20"
+        android:pathData="M21.4,29 C21.4,27.6 26.6,27.6 26.6,29 C26.6,30.4 24.8,31.2 24,31.2 C23.2,31.2 21.4,30.4 21.4,29 Z" />
+            <path android:strokeColor="#3B2A20" android:strokeWidth="0.9" android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M24,31.2 L24,32.6 M24,32.6 Q22,34.4 20.4,32.8 M24,32.6 Q26,34.4 27.6,32.8" />
+        </group>
+    </group>
+    <!-- headlights and bumper -->
+    <path android:fillColor="#FFF4C2" android:pathData="M35.5,71 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 Z" />
+    <path android:fillColor="#FFF4C2" android:pathData="M65.5,71 a3.5,3.5 0 1,0 7,0 a3.5,3.5 0 1,0 -7,0 Z" />
+    <path android:fillColor="#B85E1E" android:pathData="M46,69 h16 v4 h-16 Z" />
+    <path android:fillColor="#8A4A1E" android:pathData="M30,77 h48 v3 a2,2 0 0,1 -2,2 h-44 a2,2 0 0,1 -2,-2 Z" />
     </group>
 </vector>

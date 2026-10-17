@@ -34,7 +34,7 @@
                 android:textColor="@color/paper"
                 android:maxLines="1"
                 android:ellipsize="end"
-                android:text="Bus Catch" />
+                android:text="Bus Pup" />
             <TextView
                 android:id="@+id/updated"
                 android:layout_width="match_parent"

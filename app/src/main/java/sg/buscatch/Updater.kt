@@ -111,7 +111,7 @@ object Updater {
         )
         nm.notify(NOTIF_ID, Notification.Builder(ctx, CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
-            .setContentTitle("Bus Catch ${r.version} is available")
+            .setContentTitle("Bus Pup ${r.version} is available")
             .setContentText("Tap to update. Your stops and widgets stay.")
             .setContentIntent(open).setAutoCancel(true).build())
     }

@@ -186,7 +186,7 @@ class BusWidget : AppWidgetProvider() {
             val r = routeFor(ctx, widgetId)
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             if (r == null) {
-                v.setTextViewText(R.id.tBig, "Bus Catch"); v.setTextColor(R.id.tBig, AMBER)
+                v.setTextViewText(R.id.tBig, "Bus Pup"); v.setTextColor(R.id.tBig, AMBER)
                 v.setTextViewText(R.id.tSmall, "Tap to pick a stop")
                 return v
             }
@@ -231,7 +231,7 @@ class BusWidget : AppWidgetProvider() {
             if (r == null) {
                 v.setTextViewText(R.id.sLabel, "")
                 v.setTextViewText(R.id.sBig, "+"); v.setTextColor(R.id.sBig, AMBER)
-                v.setTextViewText(R.id.sBus, "Bus Catch")
+                v.setTextViewText(R.id.sBus, "Bus Pup")
                 v.setTextViewText(R.id.sStop, "Tap to pick a stop")
                 return v
             }
@@ -280,11 +280,11 @@ class BusWidget : AppWidgetProvider() {
             )
 
             if (r == null) {
-                v.setTextViewText(R.id.stopName, "Bus Catch")
+                v.setTextViewText(R.id.stopName, "Bus Pup")
                 v.setTextViewText(R.id.updated, "")
                 v.setTextViewText(
                     R.id.empty,
-                    if (routes.isEmpty()) "No stops yet. Tap to open Bus Catch and add one."
+                    if (routes.isEmpty()) "No stops yet. Tap to open Bus Pup and add one."
                     else "This stop was removed. Tap to choose another."
                 )
                 v.setViewVisibility(R.id.empty, View.VISIBLE)

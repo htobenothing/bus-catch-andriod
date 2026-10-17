@@ -4,4 +4,5 @@
     <color name="dim">#9A917C</color>
     <color name="paper">#E9E2CF</color>
     <color name="go">#5EE08F</color>
+    <color name="icon_bg">#FFF4E4</color>
 </resources>

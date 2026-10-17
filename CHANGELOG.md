@@ -1,6 +1,10 @@
 # Changelog
 
-All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
+All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
+
+## 1.11.0
+- New name: **Bus Pup**.
+- New app icon: an orange bus with the cartoon puppy in the windscreen.
 
 ## 1.10.0
 - Removed the running puppy from the widgets. The Puppy theme keeps its cartoon puppy and paw prints.

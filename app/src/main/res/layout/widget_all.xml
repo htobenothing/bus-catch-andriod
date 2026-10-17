@@ -66,5 +66,5 @@
         android:textSize="13sp"
         android:textColor="@color/paper"
         android:visibility="gone"
-        android:text="No stops yet. Tap to open Bus Catch and add one." />
+        android:text="No stops yet. Tap to open Bus Pup and add one." />
 </LinearLayout>

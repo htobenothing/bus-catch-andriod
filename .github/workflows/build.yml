@@ -60,26 +60,26 @@ jobs:
         run: gradle :app:assembleRelease --no-daemon
 
       - name: Rename
-        run: cp app/build/outputs/apk/release/app-release.apk BusCatch.apk
+        run: cp app/build/outputs/apk/release/app-release.apk BusPup.apk
 
       - uses: actions/upload-artifact@v4
         with:
-          name: BusCatch-${{ steps.ver.outputs.version }}
-          path: BusCatch.apk
+          name: BusPup-${{ steps.ver.outputs.version }}
+          path: BusPup.apk
 
       - name: Release notes from CHANGELOG
         if: github.ref == 'refs/heads/main' && steps.ver.outputs.exists == 'false' && steps.sign.outputs.ok == 'true'
         run: |
           V=${{ steps.ver.outputs.version }}
           awk -v v="## $V" '$0==v{f=1;next} /^## /{f=0} f' CHANGELOG.md > notes.md
-          printf '\n---\nInstall: open BusCatch.apk on your Android phone. Already have the app? Tap "Update" in Bus Catch instead.\n' >> notes.md
+          printf '\n---\nInstall: open BusPup.apk on your Android phone. Already have the app? Tap "Update" in Bus Pup instead.\n' >> notes.md
 
       - name: Publish release
         if: github.ref == 'refs/heads/main' && steps.ver.outputs.exists == 'false' && steps.sign.outputs.ok == 'true'
         uses: softprops/action-gh-release@v2
         with:
           tag_name: v${{ steps.ver.outputs.version }}
-          name: Bus Catch v${{ steps.ver.outputs.version }}
+          name: Bus Pup v${{ steps.ver.outputs.version }}
           body_path: notes.md
           make_latest: true
-          files: BusCatch.apk
+          files: BusPup.apk
