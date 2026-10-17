@@ -4,6 +4,9 @@ on:
   push:
   workflow_dispatch:
 
+permissions:
+  contents: write
+
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -26,3 +29,12 @@ jobs:
         with:
           name: BusCatch-apk
           path: BusCatch.apk
+      - name: Publish to Releases
+        if: github.ref == 'refs/heads/main'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: build-${{ github.run_number }}
+          name: Bus Catch build ${{ github.run_number }}
+          body: Download BusCatch.apk below and open it on your Android phone to install.
+          make_latest: true
+          files: BusCatch.apk
