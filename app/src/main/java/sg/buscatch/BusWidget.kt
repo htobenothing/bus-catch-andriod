@@ -120,6 +120,7 @@ class BusWidget : AppWidgetProvider() {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 return RemoteViews(
                     mapOf(
+                        SizeF(40f, 40f) to buildMicro(ctx, widgetId),
                         SizeF(100f, 40f) to buildTiny(ctx, widgetId),
                         SizeF(170f, 40f) to buildSmall(ctx, widgetId, refreshing),
                         SizeF(170f, 80f) to buildFull(ctx, widgetId, refreshing),
@@ -130,6 +131,7 @@ class BusWidget : AppWidgetProvider() {
             val w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180)
             val h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110)
             return when {
+                h < 80 && w < 100 -> buildMicro(ctx, widgetId)
                 h < 80 && w < 170 -> buildTiny(ctx, widgetId)
                 h < 80 -> buildSmall(ctx, widgetId, refreshing)
                 else -> buildFull(ctx, widgetId, refreshing)
@@ -160,7 +162,7 @@ class BusWidget : AppWidgetProvider() {
         )
 
         /** Leave advice for a stop: big text, detail text, colour. */
-        private data class Leave(val big: String, val detail: String, val color: Int)
+        private data class Leave(val big: String, val detail: String, val color: Int, val bus: String = "", val busAt: String = "")
 
         private fun leaveFor(ctx: Context, r: Route, now: Long): Leave {
             val plan = Planner.plan(r, Store.cachedStop(ctx, r.stopCode), now)
@@ -170,8 +172,8 @@ class BusWidget : AppWidgetProvider() {
                 plan == null -> Leave("…", "Loading", DIM)
                 plan.upcoming.isEmpty() -> Leave("--", "No buses coming", DIM)
                 at == null || bus == null -> Leave("MISSED", "Too late for the next bus", RED)
-                at <= now + 60_000 -> Leave("NOW", "${bus.service} at ${hm(bus.timeMs)}", GREEN)
-                else -> Leave(hm(at), "${bus.service} at ${hm(bus.timeMs)}", AMBER)
+                at <= now + 60_000 -> Leave("NOW", "${bus.service} at ${hm(bus.timeMs)}", GREEN, bus.service, hm(bus.timeMs))
+                else -> Leave(hm(at), "${bus.service} at ${hm(bus.timeMs)}", AMBER, bus.service, hm(bus.timeMs))
             }
         }
 
@@ -192,23 +194,48 @@ class BusWidget : AppWidgetProvider() {
             return v
         }
 
-        /** 3x1: stop name over the leave line, with refresh. */
+        /** 1x1: bus number, big leave time. */
+        private fun buildMicro(ctx: Context, widgetId: Int): RemoteViews {
+            val v = RemoteViews(ctx.packageName, R.layout.widget_micro)
+            val r = routeFor(ctx, widgetId)
+            v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
+            if (r == null) {
+                v.setTextViewText(R.id.mBus, "BUS"); v.setTextViewText(R.id.mBig, "+")
+                v.setTextColor(R.id.mBig, AMBER); v.setTextViewText(R.id.mLabel, "pick stop")
+                return v
+            }
+            val l = leaveFor(ctx, r, System.currentTimeMillis())
+            v.setTextViewText(R.id.mBus, (if (r.alertOn) "" else "🔕") + l.bus.ifBlank { r.services.firstOrNull() ?: "" })
+            v.setTextViewText(R.id.mBig, l.big)
+            v.setTextColor(R.id.mBig, l.color)
+            v.setTextViewText(R.id.mLabel, when {
+                l.big == "NOW" -> "GO"
+                l.big.contains(":") -> "LEAVE"
+                l.big == "MISSED" -> "next bus"
+                else -> l.detail.take(10)
+            })
+            return v
+        }
+
+        /** 3x1: big leave time, then bus + stop, then the alert bell. Nothing long shares one line. */
         private fun buildSmall(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_small)
             val r = routeFor(ctx, widgetId)
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
-            v.setOnClickPendingIntent(R.id.refresh, refreshIntent(ctx))
             setBell(ctx, v, r)
             if (r == null) {
-                v.setTextViewText(R.id.sStop, "Bus Catch")
-                v.setTextViewText(R.id.sLeave, "Tap to pick a stop"); v.setTextColor(R.id.sLeave, AMBER)
+                v.setTextViewText(R.id.sLabel, "")
+                v.setTextViewText(R.id.sBig, "+"); v.setTextColor(R.id.sBig, AMBER)
+                v.setTextViewText(R.id.sBus, "Bus Catch")
+                v.setTextViewText(R.id.sStop, "Tap to pick a stop")
                 return v
             }
-            v.setTextViewText(R.id.sStop, if (refreshing) "${r.displayName} · updating…" else "${r.displayName} · ${alertLabel(r)}")
             val l = leaveFor(ctx, r, System.currentTimeMillis())
-            val prefix = if (l.big == "NOW" || l.big.contains(":")) "Leave ${l.big}" else l.big
-            v.setTextViewText(R.id.sLeave, if (l.detail.isNotEmpty()) "$prefix · ${l.detail}" else prefix)
-            v.setTextColor(R.id.sLeave, l.color)
+            v.setTextViewText(R.id.sLabel, if (l.big.contains(":")) "LEAVE AT" else "LEAVE")
+            v.setTextViewText(R.id.sBig, l.big)
+            v.setTextColor(R.id.sBig, l.color)
+            v.setTextViewText(R.id.sBus, if (l.bus.isNotEmpty()) "${l.bus} · ${l.busAt}" else l.detail)
+            v.setTextViewText(R.id.sStop, if (refreshing) "Updating…" else r.displayName)
             return v
         }
 

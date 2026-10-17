@@ -1,0 +1,46 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 1x1: bus number over the leave time -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/root"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:background="@drawable/widget_bg"
+    android:padding="4dp">
+    <TextView
+        android:id="@+id/mBus"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:fontFamily="monospace"
+        android:textStyle="bold"
+        android:textSize="11sp"
+        android:textColor="@color/paper"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="BUS" />
+    <TextView
+        android:id="@+id/mBig"
+        android:layout_width="match_parent"
+        android:layout_height="26dp"
+        android:gravity="center"
+        android:fontFamily="monospace"
+        android:textStyle="bold"
+        android:textColor="@color/led"
+        android:maxLines="1"
+        android:autoSizeTextType="uniform"
+        android:autoSizeMinTextSize="10sp"
+        android:autoSizeMaxTextSize="20sp"
+        android:autoSizeStepGranularity="1sp"
+        android:text="--:--" />
+    <TextView
+        android:id="@+id/mLabel"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:gravity="center"
+        android:textSize="9sp"
+        android:textColor="@color/dim"
+        android:maxLines="1"
+        android:text="LEAVE" />
+</LinearLayout>

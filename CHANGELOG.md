@@ -2,6 +2,11 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.5.0
+- Stop widget can shrink to **1×1**: bus number with a big leave time.
+- Redesigned **3×1** Stop widget: big leave time, bus and stop on their own lines, and the alert bell, so nothing gets cut off.
+- Leave times shrink to fit on small widgets instead of being clipped.
+
 ## 1.4.0
 - New **All stops** widget: every saved stop with when to leave and its next buses.
 - The single-stop widget is now called **Stop** and has a 🔔 button to switch that stop's leave alert on or off in one tap.
