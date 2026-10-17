@@ -52,13 +52,6 @@ class BusWidget : AppWidgetProvider() {
     companion object {
         const val ACTION_REFRESH = "sg.buscatch.REFRESH"
 
-        private val ROWS = listOf(
-            intArrayOf(R.id.row1, R.id.svc1, R.id.next1),
-            intArrayOf(R.id.row2, R.id.svc2, R.id.next2),
-            intArrayOf(R.id.row3, R.id.svc3, R.id.next3),
-            intArrayOf(R.id.row4, R.id.svc4, R.id.next4),
-        )
-
         private const val AMBER = 0xFFFFB21A.toInt()
         private const val GREEN = 0xFF5EE08F.toInt()
         private const val RED = 0xFFFF7A45.toInt()
@@ -69,11 +62,17 @@ class BusWidget : AppWidgetProvider() {
 
         fun updateAll(ctx: Context) {
             val mgr = AppWidgetManager.getInstance(ctx)
-            ids(ctx).forEach { mgr.updateAppWidget(it, build(ctx, it, refreshing = false)) }
+            val all = ids(ctx)
+            all.forEach { mgr.updateAppWidget(it, build(ctx, it, refreshing = false)) }
+            @Suppress("DEPRECATION")
+            if (all.isNotEmpty()) mgr.notifyAppWidgetViewDataChanged(all, R.id.busList)
         }
 
         fun update(ctx: Context, widgetId: Int) {
-            AppWidgetManager.getInstance(ctx).updateAppWidget(widgetId, build(ctx, widgetId, refreshing = false))
+            val mgr = AppWidgetManager.getInstance(ctx)
+            mgr.updateAppWidget(widgetId, build(ctx, widgetId, refreshing = false))
+            @Suppress("DEPRECATION")
+            mgr.notifyAppWidgetViewDataChanged(widgetId, R.id.busList)
         }
 
         private fun hm(ms: Long) = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
@@ -88,7 +87,7 @@ class BusWidget : AppWidgetProvider() {
                     mapOf(
                         SizeF(100f, 40f) to buildTiny(ctx, widgetId),
                         SizeF(170f, 40f) to buildSmall(ctx, widgetId, refreshing),
-                        SizeF(170f, 100f) to buildFull(ctx, widgetId, refreshing),
+                        SizeF(170f, 80f) to buildFull(ctx, widgetId, refreshing),
                     )
                 )
             }
@@ -96,8 +95,8 @@ class BusWidget : AppWidgetProvider() {
             val w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180)
             val h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110)
             return when {
-                h < 100 && w < 170 -> buildTiny(ctx, widgetId)
-                h < 100 -> buildSmall(ctx, widgetId, refreshing)
+                h < 80 && w < 170 -> buildTiny(ctx, widgetId)
+                h < 80 -> buildSmall(ctx, widgetId, refreshing)
                 else -> buildFull(ctx, widgetId, refreshing)
             }
         }
@@ -177,7 +176,7 @@ class BusWidget : AppWidgetProvider() {
             return v
         }
 
-        /** 3x2 and up: every tracked bus with its next arrivals, plus the leave line. */
+        /** 3x2 and up: leave line, then a scrolling list of every tracked bus and its next arrivals. */
         private fun buildFull(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_bus)
             val routes = Store.routes(ctx)
@@ -219,11 +218,12 @@ class BusWidget : AppWidgetProvider() {
                     else "This stop was removed. Tap to choose another."
                 )
                 v.setViewVisibility(R.id.empty, View.VISIBLE)
-                ROWS.forEach { v.setViewVisibility(it[0], View.GONE) }
+                v.setViewVisibility(R.id.busList, View.GONE)
                 v.setViewVisibility(R.id.leave, View.GONE)
                 return v
             }
             v.setViewVisibility(R.id.empty, View.GONE)
+            v.setViewVisibility(R.id.busList, View.VISIBLE)
 
             // Header
             v.setTextViewText(R.id.stopName, r.displayName)
@@ -238,25 +238,23 @@ class BusWidget : AppWidgetProvider() {
                 }
             )
 
-            // One row per bus number: its next arrivals as clock times (never go stale)
+            // Every tracked bus, scrollable (rows come from BusListService)
             val services = Store.cachedStop(ctx, r.stopCode)
-            ROWS.forEachIndexed { i, ids ->
-                val no = r.services.getOrNull(i)
-                if (no == null) { v.setViewVisibility(ids[0], View.GONE); return@forEachIndexed }
-                v.setViewVisibility(ids[0], View.VISIBLE)
-                v.setTextViewText(ids[1], no)
-                val arrivals = services?.firstOrNull { it.no.equals(no, ignoreCase = true) }
-                    ?.arrivals?.filter { it.timeMs > now - 30_000 }
-                v.setTextViewText(
-                    ids[2],
-                    when {
-                        services == null -> "Loading…"
-                        arrivals.isNullOrEmpty() -> "Not running"
-                        else -> arrivals.take(3).joinToString("   ") { hm(it.timeMs) } +
-                            (if (arrivals.first().monitored) "" else "  est.")
-                    }
+            @Suppress("DEPRECATION")
+            v.setRemoteAdapter(
+                R.id.busList,
+                Intent(ctx, BusListService::class.java)
+                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                    .setData(android.net.Uri.parse("buscatch://list/$widgetId"))
+            )
+            // List taps need a mutable template so each row's fill-in intent can merge into it
+            v.setPendingIntentTemplate(
+                R.id.busList,
+                PendingIntent.getActivity(
+                    ctx, 3, Intent(ctx, MainActivity::class.java),
+                    PendingIntent.FLAG_MUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
-            }
+            )
 
             // Leave line for the soonest bus you can still catch (any of the chosen numbers)
             val plan = Planner.plan(r, services, now)

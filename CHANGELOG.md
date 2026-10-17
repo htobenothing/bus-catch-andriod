@@ -2,6 +2,11 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.3.1
+- Full-size widget (3×2 and bigger) lists every bus you track at the stop, scrollable, instead of stopping at four.
+- Full view now kicks in on launchers that report a 3×2 widget as shorter.
+- Leave line sits right under the stop name so it's always visible.
+
 ## 1.3.0
 - In-app updates: the app checks GitHub for new versions (on open and daily) and installs them in two taps.
 - Permanent signing key, so new versions install over old ones.

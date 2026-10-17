@@ -46,6 +46,29 @@
     </LinearLayout>
 
     <TextView
+        android:id="@+id/leave"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="2dp"
+        android:layout_marginBottom="4dp"
+        android:fontFamily="monospace"
+        android:textStyle="bold"
+        android:textSize="14sp"
+        android:textColor="@color/led"
+        android:maxLines="1"
+        android:ellipsize="end"
+        android:text="" />
+
+    <ListView
+        android:id="@+id/busList"
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:divider="@null"
+        android:dividerHeight="0dp"
+        android:scrollbars="none" />
+
+    <TextView
         android:id="@+id/empty"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
@@ -55,137 +78,4 @@
         android:visibility="gone"
         android:text="" />
 
-    <LinearLayout
-        android:id="@+id/row1"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp">
-        <TextView
-            android:id="@+id/svc1"
-            android:layout_width="64dp"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:textSize="22sp"
-            android:textColor="@color/led"
-            android:maxLines="1"
-            android:text="961" />
-        <TextView
-            android:id="@+id/next1"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="monospace"
-            android:textSize="15sp"
-            android:textColor="@color/paper"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:text="--" />
-    </LinearLayout>
-    <LinearLayout
-        android:id="@+id/row2"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp">
-        <TextView
-            android:id="@+id/svc2"
-            android:layout_width="64dp"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:textSize="22sp"
-            android:textColor="@color/led"
-            android:maxLines="1"
-            android:text="961" />
-        <TextView
-            android:id="@+id/next2"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="monospace"
-            android:textSize="15sp"
-            android:textColor="@color/paper"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:text="--" />
-    </LinearLayout>
-    <LinearLayout
-        android:id="@+id/row3"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp">
-        <TextView
-            android:id="@+id/svc3"
-            android:layout_width="64dp"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:textSize="22sp"
-            android:textColor="@color/led"
-            android:maxLines="1"
-            android:text="961" />
-        <TextView
-            android:id="@+id/next3"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="monospace"
-            android:textSize="15sp"
-            android:textColor="@color/paper"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:text="--" />
-    </LinearLayout>
-    <LinearLayout
-        android:id="@+id/row4"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center_vertical"
-        android:paddingTop="3dp"
-        android:paddingBottom="3dp">
-        <TextView
-            android:id="@+id/svc4"
-            android:layout_width="64dp"
-            android:layout_height="wrap_content"
-            android:fontFamily="monospace"
-            android:textStyle="bold"
-            android:textSize="22sp"
-            android:textColor="@color/led"
-            android:maxLines="1"
-            android:text="961" />
-        <TextView
-            android:id="@+id/next4"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:fontFamily="monospace"
-            android:textSize="15sp"
-            android:textColor="@color/paper"
-            android:maxLines="1"
-            android:ellipsize="end"
-            android:text="--" />
-    </LinearLayout>
-
-    <TextView
-        android:id="@+id/leave"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="6dp"
-        android:fontFamily="monospace"
-        android:textStyle="bold"
-        android:textSize="14sp"
-        android:textColor="@color/led"
-        android:maxLines="1"
-        android:ellipsize="end"
-        android:text="" />
 </LinearLayout>
