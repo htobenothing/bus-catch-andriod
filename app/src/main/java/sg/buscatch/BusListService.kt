@@ -16,6 +16,7 @@ class BusListService : RemoteViewsService() {
 
     private class Factory(private val ctx: Context, private val widgetId: Int) : RemoteViewsFactory {
         private var rows: List<Pair<String, String>> = emptyList()
+        private var pal = Theme.CLASSIC
 
         private fun hm(ms: Long) = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
 
@@ -23,6 +24,7 @@ class BusListService : RemoteViewsService() {
         override fun onDestroy() {}
 
         override fun onDataSetChanged() {
+            pal = Theme.of(ctx)
             val routes = Store.routes(ctx)
             val chosen = Store.widgetRoute(ctx, widgetId)
             val r = if (chosen == null) routes.firstOrNull() else routes.firstOrNull { it.id == chosen }
@@ -49,6 +51,8 @@ class BusListService : RemoteViewsService() {
             val (no, next) = rows.getOrNull(position) ?: ("" to "")
             v.setTextViewText(R.id.rowSvc, no)
             v.setTextViewText(R.id.rowNext, next)
+            v.setTextColor(R.id.rowSvc, pal.accent)
+            v.setTextColor(R.id.rowNext, pal.text)
             v.setOnClickFillInIntent(R.id.rowRoot, Intent()) // tap a row → open the app
             return v
         }

@@ -20,6 +20,7 @@ import android.view.View
 import android.widget.ArrayAdapter
 import android.widget.Button
 import android.widget.EditText
+import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.ScrollView
 import android.widget.Spinner
@@ -48,13 +49,15 @@ class MainActivity : Activity() {
     private var downloading = false
     private var progressBtn: Button? = null
 
-    private val BG = Color.parseColor("#0D110F")
-    private val PANEL = Color.parseColor("#141A16")
-    private val LED = Color.parseColor("#FFB21A")
-    private val GREEN = Color.parseColor("#5EE08F")
-    private val RED = Color.parseColor("#FF7A45")
-    private val DIM = Color.parseColor("#9A917C")
-    private val PAPER = Color.parseColor("#E9E2CF")
+    // Colours come from the chosen theme (Settings → Theme)
+    private var pal = Theme.CLASSIC
+    private val BG: Int get() = pal.bg
+    private val PANEL: Int get() = pal.panel
+    private val LED: Int get() = pal.accent
+    private val GREEN: Int get() = pal.go
+    private val RED: Int get() = pal.late
+    private val DIM: Int get() = pal.dim
+    private val PAPER: Int get() = pal.text
 
     private val tick = object : Runnable {
         override fun run() { render(); ui.postDelayed(this, 5_000) }
@@ -64,9 +67,16 @@ class MainActivity : Activity() {
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        pal = Theme.of(this)
+        setTheme(pal.styleRes)
         super.onCreate(savedInstanceState)
         window.statusBarColor = BG
         window.navigationBarColor = PANEL
+        if (pal.puppy) {
+            @Suppress("DEPRECATION")
+            window.decorView.systemUiVisibility =
+                View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+        }
         Notifier.ensureChannel(this)
         RefreshWorker.schedulePeriodic(this)
         tab = savedInstanceState?.getInt("tab") ?: 0
@@ -76,9 +86,12 @@ class MainActivity : Activity() {
             orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
             setPadding(dp(16), dp(16), dp(12), dp(8))
         }
+        if (pal.puppy) header.addView(ImageView(this).apply {
+            setImageResource(R.drawable.ic_dog)
+        }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(10) })
         val titles = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         titles.addView(TextView(this).apply {
-            text = "BUS CATCH"; typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            text = if (pal.puppy) "BUS CATCH 🐾" else "BUS CATCH"; typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
             textSize = 24f; setTextColor(LED)
         })
         status = TextView(this).apply { textSize = 12f; setTextColor(DIM) }
@@ -106,7 +119,7 @@ class MainActivity : Activity() {
             setBackgroundColor(PANEL)
             setPadding(0, dp(6), 0, dp(6))
         }
-        listOf("🚌\nStops", "🧩\nWidgets", "⚙️\nSettings").forEachIndexed { i, label ->
+        (if (pal.puppy) listOf("🐶\nStops", "🦴\nWidgets", "🐾\nSettings") else listOf("🚌\nStops", "🧩\nWidgets", "⚙️\nSettings")).forEachIndexed { i, label ->
             val t = TextView(this).apply {
                 text = label; gravity = Gravity.CENTER; textSize = 12f
                 setPadding(0, dp(4), 0, dp(4))
@@ -175,7 +188,8 @@ class MainActivity : Activity() {
             t.setTextColor(if (i == tab) LED else DIM)
             t.setTypeface(null, if (i == tab) Typeface.BOLD else Typeface.NORMAL)
         }
-        tabs[2].text = if (attention) "⚙️\nSettings •" else "⚙️\nSettings"
+        val icon = if (pal.puppy) "🐾" else "⚙️"
+        tabs[2].text = if (attention) "$icon\nSettings •" else "$icon\nSettings"
     }
 
     override fun onResume() {
@@ -235,8 +249,10 @@ class MainActivity : Activity() {
 
         list.removeAllViews()
         if (routes.isEmpty()) {
+            if (pal.puppy) list.addView(ImageView(this).apply { setImageResource(R.drawable.ic_dog) },
+                LinearLayout.LayoutParams(dp(120), dp(120)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(12) })
             list.addView(TextView(this).apply {
-                text = "No stops yet.\nTap “+ Add stop”, enter the 5-digit code on your bus stop sign, and tick the buses you take."
+                text = (if (pal.puppy) "Woof! " else "") + "No stops yet.\nTap “+ Add stop”, enter the 5-digit code on your bus stop sign, and tick the buses you take."
                 setTextColor(PAPER); textSize = 15f; gravity = Gravity.CENTER
                 setPadding(dp(16), dp(28), dp(16), dp(28))
                 background = rounded(PANEL)
@@ -251,7 +267,7 @@ class MainActivity : Activity() {
         notices.addView(TextView(this).apply {
             this.text = text; textSize = 13f; setTextColor(color)
             setPadding(dp(14), dp(10), dp(14), dp(10))
-            background = rounded(Color.parseColor("#1A231D"))
+            background = rounded(pal.notice)
             setOnClickListener { showTab(2) }
         }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
@@ -277,6 +293,8 @@ class MainActivity : Activity() {
             text = "${r.displayName}\nStop ${r.stopCode} · ${r.walkMin} min walk + ${r.bufferMin} buffer"
             textSize = 13f; setTextColor(PAPER)
         }, LinearLayout.LayoutParams(0, -2, 1f))
+        if (pal.puppy) head.addView(ImageView(this).apply { setImageResource(R.drawable.ic_paw) },
+            LinearLayout.LayoutParams(dp(28), dp(28)))
         c.addView(head)
 
         val row = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; setPadding(0, dp(10), 0, 0) }
@@ -373,6 +391,39 @@ class MainActivity : Activity() {
     private fun renderSettings() {
         val box = settingsPage.getChildAt(0) as LinearLayout
         box.removeAllViews()
+
+        box.addView(sectionTitle("Theme"))
+        val themes = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
+        fun themeCard(label: String, puppy: Boolean) = LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
+            setPadding(dp(8), dp(14), dp(8), dp(12))
+            val p = if (puppy) Theme.PUPPY else Theme.CLASSIC
+            background = GradientDrawable().apply {
+                setColor(p.bg); cornerRadius = dp(16).toFloat()
+                setStroke(dp(if (pal.puppy == puppy) 3 else 1), if (pal.puppy == puppy) pal.accent else pal.dim)
+            }
+            addView(if (puppy) ImageView(context).apply { setImageResource(R.drawable.ic_dog) }
+                    else TextView(context).apply {
+                        text = "961"; textSize = 26f; setTextColor(p.accent); gravity = Gravity.CENTER
+                        typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+                    },
+                LinearLayout.LayoutParams(dp(56), dp(56)))
+            addView(TextView(context).apply {
+                text = (if (pal.puppy == puppy) "✓ " else "") + label
+                textSize = 14f; setTextColor(p.text); gravity = Gravity.CENTER
+            })
+            setOnClickListener {
+                if (pal.puppy != puppy) {
+                    Theme.set(this@MainActivity, puppy)
+                    BusWidget.updateAll(this@MainActivity) // widgets follow the theme too
+                    tab = 2
+                    recreate()
+                }
+            }
+        }
+        themes.addView(themeCard("Classic", false), LinearLayout.LayoutParams(0, -2, 1f).apply { marginEnd = dp(8) })
+        themes.addView(themeCard("Puppy", true), LinearLayout.LayoutParams(0, -2, 1f))
+        box.addView(themes)
 
         box.addView(sectionTitle("Alerts"))
         val alerts = panel()

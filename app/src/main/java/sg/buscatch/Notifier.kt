@@ -48,7 +48,7 @@ object Notifier {
         }
         val n = Notification.Builder(ctx, CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
-            .setContentTitle("Leave now for bus $busNo")
+            .setContentTitle((if (Theme.of(ctx).puppy) "🐶 Woof! " else "") + "Leave now for bus $busNo")
             .setContentText(body)
             .setStyle(Notification.BigTextStyle().bigText(body))
             .setCategory(Notification.CATEGORY_ALARM)

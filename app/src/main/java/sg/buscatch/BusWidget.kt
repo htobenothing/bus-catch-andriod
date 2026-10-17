@@ -86,10 +86,12 @@ class BusWidget : AppWidgetProvider() {
 
         private fun alertLabel(r: Route) = if (r.alertOn) "🔔 ${r.activeFrom}–${r.activeTo}" else "🔕 alert off"
 
-        private const val AMBER = 0xFFFFB21A.toInt()
-        private const val GREEN = 0xFF5EE08F.toInt()
-        private const val RED = 0xFFFF7A45.toInt()
-        private const val DIM = 0xFF9A917C.toInt()
+        // Colours follow the chosen theme (classic LED or puppy); refreshed at each build
+        private var pal = Theme.CLASSIC
+        private val AMBER: Int get() = pal.accent
+        private val GREEN: Int get() = pal.go
+        private val RED: Int get() = pal.late
+        private val DIM: Int get() = pal.dim
 
         private fun ids(ctx: Context): IntArray =
             AppWidgetManager.getInstance(ctx).getAppWidgetIds(ComponentName(ctx, BusWidget::class.java))
@@ -117,6 +119,7 @@ class BusWidget : AppWidgetProvider() {
          * older versions get one layout chosen from the widget's current size.
          */
         fun build(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
+            pal = Theme.of(ctx)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 return RemoteViews(
                     mapOf(
@@ -180,6 +183,7 @@ class BusWidget : AppWidgetProvider() {
         /** 2x1: leave time in big type, bus and stop underneath. */
         private fun buildTiny(ctx: Context, widgetId: Int): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_tiny)
+            Theme.style(v, pal, dim = intArrayOf(R.id.tSmall))
             val r = routeFor(ctx, widgetId)
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             if (r == null) {
@@ -197,6 +201,7 @@ class BusWidget : AppWidgetProvider() {
         /** 1x1: bus number, big leave time. */
         private fun buildMicro(ctx: Context, widgetId: Int): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_micro)
+            Theme.style(v, pal, text = intArrayOf(R.id.mBus), dim = intArrayOf(R.id.mLabel))
             val r = routeFor(ctx, widgetId)
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             if (r == null) {
@@ -220,6 +225,7 @@ class BusWidget : AppWidgetProvider() {
         /** 3x1: big leave time, then bus + stop, then the alert bell. Nothing long shares one line. */
         private fun buildSmall(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_small)
+            Theme.style(v, pal, text = intArrayOf(R.id.sBus), dim = intArrayOf(R.id.sLabel, R.id.sStop), dog = R.id.dog)
             val r = routeFor(ctx, widgetId)
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             setBell(ctx, v, r)
@@ -242,6 +248,7 @@ class BusWidget : AppWidgetProvider() {
         /** 3x2 and up: leave line, then a scrolling list of every tracked bus and its next arrivals. */
         private fun buildFull(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_bus)
+            Theme.style(v, pal, text = intArrayOf(R.id.stopName, R.id.empty), dim = intArrayOf(R.id.updated), dog = R.id.dog)
             val routes = Store.routes(ctx)
             val chosen = Store.widgetRoute(ctx, widgetId)
             // Widgets from before per-stop widgets existed fall back to the first stop

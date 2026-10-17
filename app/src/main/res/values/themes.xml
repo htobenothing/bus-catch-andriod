@@ -1,0 +1,13 @@
+<resources>
+    <style name="Theme.BusCatch.Classic" parent="@android:style/Theme.Material.NoActionBar">
+        <item name="android:colorAccent">#FFB21A</item>
+        <item name="android:windowBackground">#0D110F</item>
+    </style>
+    <style name="Theme.BusCatch.Puppy" parent="@android:style/Theme.Material.Light.NoActionBar">
+        <item name="android:colorAccent">#E07A2E</item>
+        <item name="android:colorPrimary">#E07A2E</item>
+        <item name="android:colorButtonNormal">#FFE2C2</item>
+        <item name="android:windowBackground">#FFF4E4</item>
+        <item name="android:textColorPrimary">#4A3426</item>
+    </style>
+</resources>

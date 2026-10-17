@@ -2,6 +2,11 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.7.0
+- New **Puppy** theme 🐶: soft cream colours, an original cartoon puppy and paw prints in the app and on every widget. Pick it in Settings → Theme.
+- Alerts say "🐶 Woof!" in the Puppy theme.
+- **Classic** dark LED theme stays the default.
+
 ## 1.6.0
 - Main screen reorganised into three tabs: **Stops** (your live stops), **Widgets** (how to add and use them) and **Settings** (alert permissions, battery, updates, about).
 - Slim bars on Stops point to Settings when an update is ready or alerts need a permission; Settings shows a dot too.

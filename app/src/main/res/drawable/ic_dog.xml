@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Original cartoon puppy face: floppy ears, eye patch, pink tongue -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp"
+    android:viewportWidth="48" android:viewportHeight="48">
+    <!-- ears -->
+    <path android:fillColor="#A8693F"
+        android:pathData="M13,13 C6,12 3,22 5,29 C6.5,33.5 11,33 12.5,28 C13.5,24 14.5,18 15.5,15 Z" />
+    <path android:fillColor="#A8693F"
+        android:pathData="M35,13 C42,12 45,22 43,29 C41.5,33.5 37,33 35.5,28 C34.5,24 33.5,18 32.5,15 Z" />
+    <!-- head -->
+    <path android:fillColor="#F5D7B0"
+        android:pathData="M11,26 a13,13 0 1,0 26,0 a13,13 0 1,0 -26,0 Z" />
+    <!-- eye patch -->
+    <path android:fillColor="#C68B59"
+        android:pathData="M25.5,22.5 a4.5,4 0 1,0 9,0 a4.5,4 0 1,0 -9,0 Z" />
+    <!-- muzzle -->
+    <path android:fillColor="#FFF6EA"
+        android:pathData="M16.5,31.5 a7.5,5.5 0 1,0 15,0 a7.5,5.5 0 1,0 -15,0 Z" />
+    <!-- cheeks -->
+    <path android:fillColor="#F7A9B5"
+        android:pathData="M13.8,29 a1.8,1.4 0 1,0 3.6,0 a1.8,1.4 0 1,0 -3.6,0 Z" />
+    <path android:fillColor="#F7A9B5"
+        android:pathData="M30.6,29 a1.8,1.4 0 1,0 3.6,0 a1.8,1.4 0 1,0 -3.6,0 Z" />
+    <!-- eyes -->
+    <path android:fillColor="#3B2A20"
+        android:pathData="M17,23.5 a2.2,2.4 0 1,0 4.4,0 a2.2,2.4 0 1,0 -4.4,0 Z" />
+    <path android:fillColor="#3B2A20"
+        android:pathData="M27.8,23.5 a2.2,2.4 0 1,0 4.4,0 a2.2,2.4 0 1,0 -4.4,0 Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M18.6,22.6 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0 Z" />
+    <path android:fillColor="#FFFFFF"
+        android:pathData="M29.4,22.6 a0.8,0.8 0 1,0 1.6,0 a0.8,0.8 0 1,0 -1.6,0 Z" />
+    <!-- tongue -->
+    <path android:fillColor="#F07C8A"
+        android:pathData="M22.3,33 C22.3,36.6 25.7,36.6 25.7,33 Z" />
+    <!-- nose -->
+    <path android:fillColor="#3B2A20"
+        android:pathData="M21.4,29 C21.4,27.6 26.6,27.6 26.6,29 C26.6,30.4 24.8,31.2 24,31.2 C23.2,31.2 21.4,30.4 21.4,29 Z" />
+    <!-- mouth -->
+    <path android:strokeColor="#3B2A20" android:strokeWidth="0.9" android:strokeLineCap="round"
+        android:fillColor="#00000000"
+        android:pathData="M24,31.2 L24,32.6 M24,32.6 Q22,34.4 20.4,32.8 M24,32.6 Q26,34.4 27.6,32.8" />
+</vector>
