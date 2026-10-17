@@ -2,6 +2,10 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.9.1
+- Fix: the full Stop widget and the All stops widget showed "Can't load widget" since 1.8.0.
+- Build now checks widget layouts so this can't happen again.
+
 ## 1.9.0
 - Stop widget **Auto** mode: shows the stop whose alert window is open now, or the one that opens next, so one widget covers all your stops. Marked with ⟳.
 - Auto is the first choice when placing a Stop widget, and widgets set up before stop picking now use it too.

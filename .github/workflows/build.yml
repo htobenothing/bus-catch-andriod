@@ -37,6 +37,13 @@ jobs:
             echo "ok=true" >> "$GITHUB_OUTPUT"
           fi
 
+      - name: Check widget layouts use only widget-safe views
+        run: |
+          # Home-screen widgets fail with "Can't load widget" if a layout uses any other view type
+          allowed='FrameLayout|LinearLayout|RelativeLayout|GridLayout|TextView|ImageView|ImageButton|Button|ProgressBar|ListView|GridView|StackView|ViewFlipper|AdapterViewFlipper|Chronometer|AnalogClock|ViewStub|include|merge'
+          bad=$(grep -ho '<[A-Za-z][A-Za-z.]*' app/src/main/res/layout/widget_*.xml | tr -d '<' | sort -u | grep -Ev "^($allowed)$" || true)
+          if [ -n "$bad" ]; then echo "::error::Widget layouts use views widgets can't show: $bad"; exit 1; fi
+
       - uses: actions/setup-java@v4
         with:
           distribution: temurin
