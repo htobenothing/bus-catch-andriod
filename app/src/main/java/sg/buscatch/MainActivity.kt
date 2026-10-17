@@ -39,6 +39,7 @@ class MainActivity : Activity() {
     private lateinit var list: LinearLayout
     private lateinit var status: TextView
     private lateinit var notices: LinearLayout
+    private var puppy: PuppyRunView? = null
     private lateinit var addBtn: Button
     private lateinit var stopsPage: View
     private lateinit var widgetsPage: View
@@ -106,7 +107,8 @@ class MainActivity : Activity() {
         // Pages
         notices = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        stopsPage = page(notices, list)
+        puppy = if (pal.puppy) PuppyRunView(this) else null
+        stopsPage = puppy?.let { page(it, notices, list) } ?: page(notices, list)
         widgetsPage = page(*widgetsContent())
         settingsPage = page()
         val pages = android.widget.FrameLayout(this).apply {
@@ -210,6 +212,7 @@ class MainActivity : Activity() {
 
     override fun onPause() {
         super.onPause()
+        puppy?.stop()
         ui.removeCallbacks(poll); ui.removeCallbacks(tick)
     }
 
@@ -249,6 +252,7 @@ class MainActivity : Activity() {
 
         list.removeAllViews()
         if (routes.isEmpty()) {
+            puppy?.apply { mode = PuppyRunView.Mode.SIT; caption = "Add a stop and I'll walk you to the bus!"; start() }
             if (pal.puppy) list.addView(ImageView(this).apply { setImageResource(R.drawable.ic_dog) },
                 LinearLayout.LayoutParams(dp(120), dp(120)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(12) })
             list.addView(TextView(this).apply {
@@ -260,7 +264,25 @@ class MainActivity : Activity() {
             return
         }
         val now = System.currentTimeMillis()
+        updatePuppy(routes, now)
         routes.forEach { r -> list.addView(card(r, now), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) }) }
+    }
+
+    /** Puppy strolls with time to spare, runs when it's nearly time, sits if the bus is missed. */
+    private fun updatePuppy(routes: List<Route>, now: Long) {
+        val p = puppy ?: return
+        val r = WidgetRoutes.nearest(this, routes)
+        val plan = r?.let { Planner.plan(it, Store.cachedStop(this, it.stopCode), now) }
+        val leave = plan?.leaveAtMs
+        val mins = leave?.let { ((it - now) / 60_000).coerceAtLeast(0) }
+        when {
+            r == null || plan == null -> { p.mode = PuppyRunView.Mode.SIT; p.caption = "Waiting for live buses…" }
+            plan.upcoming.isEmpty() -> { p.mode = PuppyRunView.Mode.SIT; p.caption = "No buses coming at ${r.displayName}" }
+            leave == null -> { p.mode = PuppyRunView.Mode.SIT; p.caption = "Missed it! Next bus soon" }
+            mins!! <= 3 -> { p.mode = PuppyRunView.Mode.RUN; p.caption = if (mins == 0L) "Go go go! Leave now for ${plan.target?.service}" else "Hurry! Leave in $mins min" }
+            else -> { p.mode = PuppyRunView.Mode.WALK; p.caption = "Strolling… leave in $mins min for ${plan.target?.service}" }
+        }
+        p.start()
     }
 
     private fun notice(text: String, color: Int) {

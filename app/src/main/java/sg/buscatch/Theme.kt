@@ -55,4 +55,22 @@ object Theme {
         if (dog != 0) v.setViewVisibility(dog, if (p.puppy) View.VISIBLE else View.GONE)
     }
 
+
+    /**
+     * Puppy progress road on the full Stop widget (Puppy theme): the puppy sits at one of 11
+     * spots and moves a spot closer to the bus stop for every 2 minutes off leave time,
+     * reaching the stop when it's time to go. [minsToLeave] null hides the road.
+     */
+    fun road(v: RemoteViews, p: Palette, minsToLeave: Long?) {
+        val show = p.puppy && minsToLeave != null
+        v.setViewVisibility(R.id.puppyRoad, if (show) View.VISIBLE else View.GONE)
+        if (!show) return
+        val spot = (10 - (minsToLeave!!.coerceAtLeast(0) + 1) / 2).coerceIn(0, 10).toInt()
+        ROAD.forEachIndexed { i, id -> v.setViewVisibility(id, if (i == spot) View.VISIBLE else View.GONE) }
+    }
+
+    private val ROAD = intArrayOf(
+        R.id.roadDog0, R.id.roadDog1, R.id.roadDog2, R.id.roadDog3, R.id.roadDog4, R.id.roadDog5,
+        R.id.roadDog6, R.id.roadDog7, R.id.roadDog8, R.id.roadDog9, R.id.roadDog10,
+    )
 }

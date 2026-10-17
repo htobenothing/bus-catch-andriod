@@ -290,6 +290,7 @@ class BusWidget : AppWidgetProvider() {
                 v.setViewVisibility(R.id.empty, View.VISIBLE)
                 v.setViewVisibility(R.id.busList, View.GONE)
                 v.setViewVisibility(R.id.leave, View.GONE)
+                Theme.road(v, pal, null)
                 return v
             }
             v.setViewVisibility(R.id.empty, View.GONE)
@@ -337,6 +338,8 @@ class BusWidget : AppWidgetProvider() {
                 leaveAt <= now + 60_000 -> "Leave NOW · ${bus.service} at ${hm(bus.timeMs)}" to GREEN
                 else -> "Leave ${hm(leaveAt)} · ${bus.service} at ${hm(bus.timeMs)}" to AMBER
             }
+            // Puppy walks toward the bus stop as leave time approaches (Puppy theme)
+            Theme.road(v, pal, if (plan == null || plan.upcoming.isEmpty() || leaveAt == null) null else (leaveAt - now) / 60_000)
             v.setViewVisibility(R.id.leave, if (text.isEmpty()) View.GONE else View.VISIBLE)
             v.setTextViewText(R.id.leave, text)
             v.setTextColor(R.id.leave, color)

@@ -2,6 +2,10 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.12.0
+- Puppy theme: a smooth, animated puppy on a little road at the top of the Stops tab. It strolls when there's time, runs when it's nearly time to leave, and sits and wags if the bus is missed. Tap it to make it jump and woof.
+- Puppy theme: the full Stop widget has a puppy road. The puppy moves closer to the bus stop sign as leave time approaches and reaches it when it's time to go.
+
 ## 1.11.0
 - New name: **Bus Pup**.
 - New app icon: an orange bus with the cartoon puppy in the windscreen.
