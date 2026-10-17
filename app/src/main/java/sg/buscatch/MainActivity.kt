@@ -34,6 +34,11 @@ import java.util.concurrent.Executors
 
 class MainActivity : Activity() {
 
+    companion object {
+        /** Always points at the newest release's APK. */
+        const val SHARE_APK = "https://github.com/htobenothing/bus-catch-andriod/releases/latest/download/BusPup.apk"
+    }
+
     private val io = Executors.newSingleThreadExecutor()
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var list: LinearLayout
@@ -493,6 +498,15 @@ class MainActivity : Activity() {
         }
         box.addView(upd)
 
+        box.addView(sectionTitle("Share"))
+        box.addView(panel(
+            para("Send Bus Pup to family and friends. They get the download link and simple install steps."),
+            Button(this).apply {
+                text = "Share Bus Pup"; isAllCaps = false
+                setOnClickListener { shareApp() }
+            },
+        ))
+
         box.addView(sectionTitle("About"))
         box.addView(panel(
             para("Bus Pup v${Updater.current}"),
@@ -516,6 +530,28 @@ class MainActivity : Activity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         render(); if (tab == 2) renderSettings(); renderTabs()
+    }
+
+    private fun shareApp() {
+        val msg = """
+            |🐶🚌 Try Bus Pup! It shows live Singapore bus arrivals and tells you exactly when to leave home, so you don't wait long at the stop.
+            |
+            |Download (Android): $SHARE_APK
+            |
+            |How to install:
+            |1. Open the link on your Android phone and download BusPup.apk
+            |2. Open the file. If asked, allow installs from your browser
+            |3. If Play Protect warns, tap More details → Install anyway
+            |4. Open Bus Pup, tap + Add stop and enter the 5-digit code on your bus stop sign
+            |
+            |Updates come through the app (Settings → Check for updates).
+        """.trimMargin()
+        startActivity(Intent.createChooser(
+            Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, "Bus Pup: never wait long for your bus")
+                .putExtra(Intent.EXTRA_TEXT, msg),
+            "Share Bus Pup"
+        ))
     }
 
     // ---------- updates ----------
