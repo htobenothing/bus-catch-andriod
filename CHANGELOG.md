@@ -2,6 +2,10 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.8.0
+- In the Puppy theme, a cartoon puppy now runs back and forth along the bottom of the Stop widget (3×2 and bigger) and the All stops widget.
+- The puppy runs faster in the last 3 minutes before it's time to leave.
+
 ## 1.7.0
 - New **Puppy** theme 🐶: soft cream colours, an original cartoon puppy and paw prints in the app and on every widget. Pick it in Settings → Theme.
 - Alerts say "🐶 Woof!" in the Puppy theme.

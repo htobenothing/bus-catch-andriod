@@ -54,4 +54,14 @@ object Theme {
         accent.forEach { v.setTextColor(it, p.accent) }
         if (dog != 0) v.setViewVisibility(dog, if (p.puppy) View.VISIBLE else View.GONE)
     }
+
+    /**
+     * The running puppy strip (Puppy theme only). [hurry] swaps to the faster flipper
+     * when it's nearly time to leave; [show] = false hides it, e.g. when no stop is set.
+     */
+    fun runDog(v: RemoteViews, p: Palette, hurry: Boolean, show: Boolean = true) {
+        val on = p.puppy && show
+        v.setViewVisibility(R.id.dogRunSlow, if (on && !hurry) View.VISIBLE else View.GONE)
+        v.setViewVisibility(R.id.dogRunFast, if (on && hurry) View.VISIBLE else View.GONE)
+    }
 }

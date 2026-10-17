@@ -291,6 +291,7 @@ class BusWidget : AppWidgetProvider() {
                 v.setViewVisibility(R.id.empty, View.VISIBLE)
                 v.setViewVisibility(R.id.busList, View.GONE)
                 v.setViewVisibility(R.id.leave, View.GONE)
+                Theme.runDog(v, pal, hurry = false)
                 return v
             }
             v.setViewVisibility(R.id.empty, View.GONE)
@@ -338,6 +339,8 @@ class BusWidget : AppWidgetProvider() {
                 leaveAt <= now + 60_000 -> "Leave NOW · ${bus.service} at ${hm(bus.timeMs)}" to GREEN
                 else -> "Leave ${hm(leaveAt)} · ${bus.service} at ${hm(bus.timeMs)}" to AMBER
             }
+            // Puppy runs faster in the last 3 minutes before you need to leave
+            Theme.runDog(v, pal, hurry = leaveAt != null && leaveAt <= now + 3 * 60_000)
             v.setViewVisibility(R.id.leave, if (text.isEmpty()) View.GONE else View.VISIBLE)
             v.setTextViewText(R.id.leave, text)
             v.setTextColor(R.id.leave, color)
