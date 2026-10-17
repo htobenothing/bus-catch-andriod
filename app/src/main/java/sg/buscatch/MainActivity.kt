@@ -37,10 +37,16 @@ class MainActivity : Activity() {
     private val ui = Handler(Looper.getMainLooper())
     private lateinit var list: LinearLayout
     private lateinit var status: TextView
-    private lateinit var permBox: LinearLayout
-    private lateinit var updateBox: LinearLayout
+    private lateinit var notices: LinearLayout
+    private lateinit var addBtn: Button
+    private lateinit var stopsPage: View
+    private lateinit var widgetsPage: View
+    private lateinit var settingsPage: ScrollView
+    private val tabs = mutableListOf<TextView>()
+    private var tab = 0 // 0 Stops, 1 Widgets, 2 Settings
     private var pendingApk: java.io.File? = null
     private var downloading = false
+    private var progressBtn: Button? = null
 
     private val BG = Color.parseColor("#0D110F")
     private val PANEL = Color.parseColor("#141A16")
@@ -60,69 +66,129 @@ class MainActivity : Activity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         window.statusBarColor = BG
-        window.navigationBarColor = BG
+        window.navigationBarColor = PANEL
         Notifier.ensureChannel(this)
         RefreshWorker.schedulePeriodic(this)
+        tab = savedInstanceState?.getInt("tab") ?: 0
 
-        val root = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(20), dp(16), dp(24))
+        // Header: title + live status, and the Add button on the Stops tab
+        val header = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(16), dp(16), dp(12), dp(8))
         }
-        root.addView(TextView(this).apply {
-            text = "BUS CATCH"
-            typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
-            textSize = 28f; setTextColor(LED)
+        val titles = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        titles.addView(TextView(this).apply {
+            text = "BUS CATCH"; typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
+            textSize = 24f; setTextColor(LED)
         })
-        root.addView(TextView(this).apply {
-            text = "Live LTA arrivals and a nudge when it's time to leave home."
-            textSize = 14f; setTextColor(DIM)
-        })
-        status = TextView(this).apply { textSize = 13f; setTextColor(DIM); setPadding(0, dp(6), 0, dp(12)) }
-        root.addView(status)
-
-        updateBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        root.addView(updateBox)
-
-        permBox = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        root.addView(permBox)
-
-        list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
-        root.addView(list)
-
-        root.addView(Button(this).apply {
-            text = "+ Add stop"
+        status = TextView(this).apply { textSize = 12f; setTextColor(DIM) }
+        titles.addView(status)
+        header.addView(titles, LinearLayout.LayoutParams(0, -2, 1f))
+        addBtn = Button(this).apply {
+            text = "+ Add stop"; isAllCaps = false
             setOnClickListener { editDialog(null) }
-        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
+        }
+        header.addView(addBtn)
 
-        root.addView(TextView(this).apply {
-            text = "Widgets: long-press an empty spot on your home screen → Widgets → Bus Catch.\n" +
-                "• Bus Catch · Stop shows one stop. Tap its 🔔 to switch that stop's alert on or off.\n" +
-                "• Bus Catch · All stops lists every saved stop.\n\n" +
-                "Alerts fire once a day per stop, inside the alert window you set, even when the app is closed. " +
-                "Times marked est. are schedule estimates; others are GPS-tracked. Data: LTA DataMall via arrivelah."
-            textSize = 12f; setTextColor(DIM); setPadding(0, dp(16), 0, 0)
+        // Pages
+        notices = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
+        stopsPage = page(notices, list)
+        widgetsPage = page(*widgetsContent())
+        settingsPage = page()
+        val pages = android.widget.FrameLayout(this).apply {
+            addView(stopsPage); addView(widgetsPage); addView(settingsPage)
+        }
+
+        // Bottom tab bar
+        val bar = LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            setBackgroundColor(PANEL)
+            setPadding(0, dp(6), 0, dp(6))
+        }
+        listOf("🚌\nStops", "🧩\nWidgets", "⚙️\nSettings").forEachIndexed { i, label ->
+            val t = TextView(this).apply {
+                text = label; gravity = Gravity.CENTER; textSize = 12f
+                setPadding(0, dp(4), 0, dp(4))
+                setOnClickListener { showTab(i) }
+            }
+            tabs.add(t)
+            bar.addView(t, LinearLayout.LayoutParams(0, -2, 1f))
+        }
+
+        setContentView(LinearLayout(this).apply {
+            orientation = LinearLayout.VERTICAL
+            setBackgroundColor(BG)
+            addView(header)
+            addView(pages, LinearLayout.LayoutParams(-1, 0, 1f))
+            addView(bar)
         })
+        showTab(tab)
+    }
 
-        root.addView(Button(this).apply {
-            text = "Bus Catch v${Updater.current} · Check for updates"; isAllCaps = false
-            textSize = 12f
-            setOnClickListener { checkForUpdate(manual = true) }
-        }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(12) })
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putInt("tab", tab)
+    }
 
-        setContentView(ScrollView(this).apply { setBackgroundColor(BG); addView(root) })
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        showTab(0) // opened from a widget or alert: show the stops
+    }
+
+    @Deprecated("Deprecated in Java")
+    @Suppress("DEPRECATION")
+    override fun onBackPressed() {
+        // Back from Widgets or Settings returns to Stops before leaving the app
+        if (tab != 0) showTab(0) else super.onBackPressed()
+    }
+
+    private fun page(vararg children: View) = ScrollView(this).apply {
+        addView(LinearLayout(this@MainActivity).apply {
+            orientation = LinearLayout.VERTICAL
+            setPadding(dp(16), dp(4), dp(16), dp(24))
+            children.forEach { addView(it) }
+        })
+    }
+
+    private fun showTab(i: Int) {
+        tab = i
+        stopsPage.visibility = if (i == 0) View.VISIBLE else View.GONE
+        widgetsPage.visibility = if (i == 1) View.VISIBLE else View.GONE
+        settingsPage.visibility = if (i == 2) View.VISIBLE else View.GONE
+        addBtn.visibility = if (i == 0) View.VISIBLE else View.GONE
+        if (i == 2) renderSettings()
+        renderTabs()
+    }
+
+    /** Things that need attention; shown as a dot on Settings and a bar on Stops. */
+    private fun needsNotifications() = Build.VERSION.SDK_INT >= 33 && !Notifier.canNotify(this)
+    private fun needsExactAlarms(): Boolean {
+        if (Build.VERSION.SDK_INT < 31) return false
+        val am = getSystemService(AlarmManager::class.java) ?: return false
+        return !am.canScheduleExactAlarms()
+    }
+
+    private fun renderTabs() {
+        val attention = Updater.known(this) != null || needsNotifications() || needsExactAlarms()
+        tabs.forEachIndexed { i, t ->
+            t.setTextColor(if (i == tab) LED else DIM)
+            t.setTypeface(null, if (i == tab) Typeface.BOLD else Typeface.NORMAL)
+        }
+        tabs[2].text = if (attention) "⚙️\nSettings •" else "⚙️\nSettings"
     }
 
     override fun onResume() {
         super.onResume()
-        renderPermissions()
-        render()
         // Back from "allow installs from this app": continue the update
         pendingApk?.let { apk ->
             if (Build.VERSION.SDK_INT < 26 || packageManager.canRequestPackageInstalls()) {
                 if (Updater.install(this, apk)) pendingApk = null
             }
         }
-        renderUpdate()
+        render()
+        if (tab == 2) renderSettings()
+        renderTabs()
         if (System.currentTimeMillis() - Updater.lastChecked(this) > 6 * 3600_000L) checkForUpdate(manual = false)
         ui.post(poll)
         ui.postDelayed(tick, 5_000)
@@ -155,17 +221,22 @@ class MainActivity : Activity() {
         val routes = Store.routes(this)
         val last = Store.lastRefresh(this)
         status.text = when {
-            routes.isEmpty() -> "Add a bus to start."
+            routes.isEmpty() -> "Live LTA arrivals · leave-home alerts"
             last == 0L -> "Loading live arrivals…"
-            !Store.lastOk(this) -> "Can't reach live arrivals. Showing data from ${hm(last)}."
+            !Store.lastOk(this) -> "Offline · showing data from ${hm(last)}"
             else -> "● Live · updated ${(System.currentTimeMillis() - last) / 1000}s ago"
         }
         status.setTextColor(if (routes.isNotEmpty() && last != 0L && Store.lastOk(this)) GREEN else DIM)
 
+        // Slim notices that lead to Settings
+        notices.removeAllViews()
+        Updater.known(this)?.let { notice("⬆  Version ${it.version} is ready · tap to update", GREEN) }
+        if (needsNotifications() || needsExactAlarms()) notice("⚠  Alerts need a permission · tap to fix", LED)
+
         list.removeAllViews()
         if (routes.isEmpty()) {
             list.addView(TextView(this).apply {
-                text = "No buses yet.\nTap “+ Add stop”, enter the 5-digit code on your bus stop sign, and tick the buses you take."
+                text = "No stops yet.\nTap “+ Add stop”, enter the 5-digit code on your bus stop sign, and tick the buses you take."
                 setTextColor(PAPER); textSize = 15f; gravity = Gravity.CENTER
                 setPadding(dp(16), dp(28), dp(16), dp(28))
                 background = rounded(PANEL)
@@ -174,6 +245,15 @@ class MainActivity : Activity() {
         }
         val now = System.currentTimeMillis()
         routes.forEach { r -> list.addView(card(r, now), LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) }) }
+    }
+
+    private fun notice(text: String, color: Int) {
+        notices.addView(TextView(this).apply {
+            this.text = text; textSize = 13f; setTextColor(color)
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = rounded(Color.parseColor("#1A231D"))
+            setOnClickListener { showTab(2) }
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
     }
 
     private fun card(r: Route, now: Long): View {
@@ -245,36 +325,124 @@ class MainActivity : Activity() {
 
     private fun daysLabel(d: String) = when (d) { "weekdays" -> "weekdays"; "weekends" -> "weekends"; else -> "daily" }
 
-    private fun renderPermissions() {
-        permBox.removeAllViews()
-        if (Build.VERSION.SDK_INT >= 33 && !Notifier.canNotify(this)) {
-            permBox.addView(permButton("Allow notifications so alerts can reach you") {
-                requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
-            })
-        }
-        if (Build.VERSION.SDK_INT >= 31) {
-            val am = getSystemService(AlarmManager::class.java)
-            if (am != null && !am.canScheduleExactAlarms()) {
-                permButton("Allow exact alarms so alerts are on time") {
-                    try {
-                        startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
-                    } catch (e: Exception) {
-                        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
-                    }
-                }.also { permBox.addView(it) }
+    // ---------- Widgets tab (static help) ----------
+
+    private fun sectionTitle(t: String) = TextView(this).apply {
+        text = t.uppercase(); textSize = 12f; letterSpacing = 0.08f
+        setTextColor(DIM); setPadding(dp(4), dp(18), 0, dp(6))
+    }
+
+    private fun panel(vararg views: View) = LinearLayout(this).apply {
+        orientation = LinearLayout.VERTICAL
+        setPadding(dp(16), dp(12), dp(16), dp(14))
+        background = rounded(PANEL)
+        views.forEach { addView(it) }
+    }
+
+    private fun para(t: String, color: Int = PAPER, size: Float = 14f) = TextView(this).apply {
+        text = t; textSize = size; setTextColor(color); setLineSpacing(0f, 1.15f)
+        setPadding(0, dp(2), 0, dp(2))
+    }
+
+    private fun widgetsContent(): Array<View> = arrayOf(
+        sectionTitle("Add a widget"),
+        panel(para("1.  Long-press an empty spot on your home screen\n2.  Tap Widgets and find Bus Catch\n3.  Drag a widget out. The Stop widget asks which stop to show.")),
+        sectionTitle("Bus Catch · Stop"),
+        panel(
+            para("One stop. Add one per stop you want on your home screen."),
+            para("🔔  Tap the bell to switch that stop's leave alert on or off.", LED),
+            para("Resize it to change what it shows:", DIM, 13f),
+            para("1×1   bus number and leave time\n2×1   leave time and which bus\n3×1   leave time, bus, stop and bell\n3×2+  every bus at the stop with next arrivals", PAPER, 13f).apply {
+                typeface = Typeface.MONOSPACE
+            },
+            para("Long-press the widget to switch it to another stop (Android 12+).", DIM, 13f),
+        ),
+        sectionTitle("Bus Catch · All stops"),
+        panel(para("Every saved stop in one scrolling list, with when to leave and the next buses. No setup needed.")),
+        sectionTitle("Reading the colours"),
+        panel(
+            para("Amber   leave at this time", LED),
+            para("Green   leave now", GREEN),
+            para("Orange  too late for the next bus", RED),
+            para("est. = schedule estimate; other times are GPS-tracked.", DIM, 13f),
+        ),
+    )
+
+    // ---------- Settings tab ----------
+
+    private fun renderSettings() {
+        val box = settingsPage.getChildAt(0) as LinearLayout
+        box.removeAllViews()
+
+        box.addView(sectionTitle("Alerts"))
+        val alerts = panel()
+        alerts.addView(permRow("Notifications", "So leave alerts can reach you", !needsNotifications()) {
+            requestPermissions(arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1)
+        })
+        alerts.addView(permRow("Exact alarms", "So alerts arrive on the minute", !needsExactAlarms()) {
+            try {
+                startActivity(Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM, Uri.parse("package:$packageName")))
+            } catch (e: Exception) {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
+        })
+        alerts.addView(para("If alerts arrive late, set battery usage to Unrestricted. This matters most on Xiaomi, Oppo, Vivo and Samsung.", DIM, 13f))
+        alerts.addView(Button(this).apply {
+            text = "Open battery settings"; isAllCaps = false
+            setOnClickListener {
+                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }
+        })
+        box.addView(alerts)
+
+        box.addView(sectionTitle("App updates"))
+        val upd = panel()
+        val r = Updater.known(this)
+        if (r == null) {
+            upd.addView(para("You have v${Updater.current}."))
+            upd.addView(Button(this).apply {
+                text = "Check for updates"; isAllCaps = false
+                setOnClickListener { checkForUpdate(manual = true) }
+            })
+        } else {
+            upd.addView(para("Version ${r.version} is available (you have ${Updater.current})", GREEN).apply {
+                setTypeface(typeface, Typeface.BOLD)
+            })
+            if (r.notes.isNotBlank()) upd.addView(para(r.notes.lines().filter { it.isNotBlank() }.take(6).joinToString("\n"), PAPER, 13f))
+            val btn = Button(this).apply {
+                text = if (downloading) "Downloading…" else "Update now"; isAllCaps = false
+                isEnabled = !downloading
+            }
+            btn.setOnClickListener { startUpdate(r, btn) }
+            progressBtn = btn
+            upd.addView(btn)
+            upd.addView(para("Your stops and widgets stay after updating.", DIM, 12f))
         }
+        box.addView(upd)
+
+        box.addView(sectionTitle("About"))
+        box.addView(panel(
+            para("Bus Catch v${Updater.current}"),
+            para("Live arrivals from LTA DataMall via arrivelah. Refreshes every 15 minutes, and about every minute during an alert window.", DIM, 13f),
+            para("github.com/htobenothing/bus-catch-andriod", DIM, 12f).apply { setTextIsSelectable(true) },
+        ))
+    }
+
+    private fun permRow(title: String, why: String, ok: Boolean, fix: () -> Unit) = LinearLayout(this).apply {
+        orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+        setPadding(0, dp(4), 0, dp(8))
+        addView(LinearLayout(context).apply {
+            orientation = LinearLayout.VERTICAL
+            addView(TextView(context).apply { text = title; textSize = 15f; setTextColor(PAPER) })
+            addView(TextView(context).apply { text = why; textSize = 12f; setTextColor(DIM) })
+        }, LinearLayout.LayoutParams(0, -2, 1f))
+        if (ok) addView(TextView(context).apply { text = "✓ On"; textSize = 14f; setTextColor(GREEN) })
+        else addView(Button(context).apply { text = "Allow"; isAllCaps = false; setOnClickListener { fix() } })
     }
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
-        renderPermissions()
-    }
-
-    private fun permButton(label: String, onClick: () -> Unit) = Button(this).apply {
-        text = label; isAllCaps = false
-        setOnClickListener { onClick() }
-        layoutParams = LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(8) }
+        render(); if (tab == 2) renderSettings(); renderTabs()
     }
 
     // ---------- updates ----------
@@ -284,35 +452,10 @@ class MainActivity : Activity() {
         io.execute {
             val r = Updater.check(this)
             ui.post {
-                renderUpdate()
+                render(); if (tab == 2 && !downloading) renderSettings(); renderTabs()
                 if (manual && r == null) toast("You're on the latest version (v${Updater.current}).")
             }
         }
-    }
-
-    private fun renderUpdate() {
-        updateBox.removeAllViews()
-        val r = Updater.known(this) ?: return
-        val box = LinearLayout(this).apply {
-            orientation = LinearLayout.VERTICAL
-            setPadding(dp(16), dp(12), dp(16), dp(12))
-            background = rounded(Color.parseColor("#1E2A22"))
-        }
-        box.addView(TextView(this).apply {
-            text = "Version ${r.version} is available (you have ${Updater.current})"
-            textSize = 15f; setTextColor(GREEN); setTypeface(typeface, Typeface.BOLD)
-        })
-        if (r.notes.isNotBlank()) box.addView(TextView(this).apply {
-            text = r.notes.lines().filter { it.isNotBlank() }.take(5).joinToString("\n")
-            textSize = 13f; setTextColor(PAPER); setPadding(0, dp(4), 0, dp(4))
-        })
-        val btn = Button(this).apply {
-            text = if (downloading) "Downloading…" else "Update now"; isAllCaps = false
-            isEnabled = !downloading
-        }
-        btn.setOnClickListener { startUpdate(r, btn) }
-        box.addView(btn)
-        updateBox.addView(box, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(12) })
     }
 
     private fun startUpdate(r: Updater.Release, btn: Button) {
@@ -320,11 +463,12 @@ class MainActivity : Activity() {
         btn.isEnabled = false; btn.text = "Downloading 0%"
         io.execute {
             try {
-                val apk = Updater.download(this, r) { pct -> ui.post { btn.text = "Downloading $pct%" } }
+                val apk = Updater.download(this, r) { pct -> ui.post { progressBtn?.text = "Downloading $pct%" } }
                 ui.post {
                     downloading = false
-                    btn.isEnabled = true; btn.text = "Install update"
-                    btn.setOnClickListener { if (!Updater.install(this, apk)) pendingApk = apk }
+                    val b = progressBtn ?: btn
+                    b.isEnabled = true; b.text = "Install update"
+                    b.setOnClickListener { if (!Updater.install(this, apk)) pendingApk = apk }
                     if (!Updater.install(this, apk)) {
                         pendingApk = apk
                         toast("Allow Bus Catch to install updates, then come back.")
@@ -333,7 +477,7 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 ui.post {
                     downloading = false
-                    btn.isEnabled = true; btn.text = "Try again"
+                    progressBtn?.let { it.isEnabled = true; it.text = "Try again" }
                     toast("Couldn't download the update. Check your connection and try again.")
                 }
             }

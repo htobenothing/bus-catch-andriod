@@ -2,6 +2,11 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.6.0
+- Main screen reorganised into three tabs: **Stops** (your live stops), **Widgets** (how to add and use them) and **Settings** (alert permissions, battery, updates, about).
+- Slim bars on Stops point to Settings when an update is ready or alerts need a permission; Settings shows a dot too.
+- Back from Widgets or Settings returns to Stops.
+
 ## 1.5.0
 - Stop widget can shrink to **1×1**: bus number with a big leave time.
 - Redesigned **3×1** Stop widget: big leave time, bus and stop on their own lines, and the alert bell, so nothing gets cut off.
