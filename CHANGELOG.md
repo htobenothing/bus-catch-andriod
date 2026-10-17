@@ -2,6 +2,10 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.4.0
+- New **All stops** widget: every saved stop with when to leave and its next buses.
+- The single-stop widget is now called **Stop** and has a 🔔 button to switch that stop's leave alert on or off in one tap.
+
 ## 1.3.1
 - Full-size widget (3×2 and bigger) lists every bus you track at the stop, scrollable, instead of stopping at four.
 - Full view now kicks in on launchers that report a 3×2 widget as shorter.

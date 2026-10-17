@@ -95,8 +95,9 @@ class MainActivity : Activity() {
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
         root.addView(TextView(this).apply {
-            text = "Add a widget: long-press an empty spot on your home screen → Widgets → Bus Catch, then pick a stop. " +
-                "Each widget shows one stop, so add one widget per stop. Long-press a widget to switch its stop.\n\n" +
+            text = "Widgets: long-press an empty spot on your home screen → Widgets → Bus Catch.\n" +
+                "• Bus Catch · Stop shows one stop. Tap its 🔔 to switch that stop's alert on or off.\n" +
+                "• Bus Catch · All stops lists every saved stop.\n\n" +
                 "Alerts fire once a day per stop, inside the alert window you set, even when the app is closed. " +
                 "Times marked est. are schedule estimates; others are GPS-tracked. Data: LTA DataMall via arrivelah."
             textSize = 12f; setTextColor(DIM); setPadding(0, dp(16), 0, 0)

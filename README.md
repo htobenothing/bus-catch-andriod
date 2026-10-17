@@ -3,7 +3,8 @@
 Live Singapore bus arrivals on your home screen, plus a "leave now" alert timed to your walk to the stop.
 
 ## Features
-- **One widget per stop**: when you place a widget it asks which saved stop to show. Add several widgets for several stops. Each widget lists every bus number you track there with its next arrival times, plus when to leave home. Long-press a widget to switch stops (Android 12+). Resize it down to 3×1 (stop + leave line) or 2×1 (just the leave time).
+- **Two widgets**: *Bus Catch · All stops* lists every saved stop; *Bus Catch · Stop* shows one stop and has a 🔔 button to turn its alert on or off.
+- **Stop widget**: when you place a widget it asks which saved stop to show. Add several widgets for several stops. Each widget lists every bus number you track there with its next arrival times, plus when to leave home. Long-press a widget to switch stops (Android 12+). Resize it down to 3×1 (stop + leave line) or 2×1 (just the leave time).
 - **Several bus numbers per stop**: e.g. 961 and 190; the alert targets whichever catchable bus comes first.
 - **Leave-home alerts** that fire even when the app is closed, once a day per bus, only inside the alert window you set (e.g. 07:00–09:00 on weekdays).
 - **Live data** from LTA DataMall via arrivelah (no API key needed). Shows crowding and whether the bus is GPS-tracked.

@@ -25,10 +25,12 @@
 
         <receiver
             android:name=".BusWidget"
-            android:exported="false">
+            android:exported="false"
+            android:label="@string/stop_widget_label">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="sg.buscatch.REFRESH" />
+                <action android:name="sg.buscatch.TOGGLE_ALERT" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -45,6 +47,23 @@
                 <action android:name="android.appwidget.action.APPWIDGET_CONFIGURE" />
             </intent-filter>
         </activity>
+
+        <receiver
+            android:name=".AllStopsWidget"
+            android:exported="false"
+            android:label="@string/all_widget_label">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/all_stops_widget_info" />
+        </receiver>
+
+        <service
+            android:name=".AllStopsService"
+            android:exported="false"
+            android:permission="android.permission.BIND_REMOTEVIEWS" />
 
         <service
             android:name=".BusListService"

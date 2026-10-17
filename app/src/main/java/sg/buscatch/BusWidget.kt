@@ -11,6 +11,7 @@ import android.os.Bundle
 import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
+import android.widget.Toast
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
@@ -47,10 +48,43 @@ class BusWidget : AppWidgetProvider() {
             ids(ctx).forEach { mgr.updateAppWidget(it, build(ctx, it, refreshing = true)) }
             RefreshWorker.refreshSoon(ctx)
         }
+        if (intent.action == ACTION_TOGGLE_ALERT) {
+            val id = intent.getStringExtra(EXTRA_ROUTE_ID) ?: return
+            val r = Store.routes(ctx).firstOrNull { it.id == id } ?: return
+            val on = !r.alertOn
+            Store.upsert(ctx, r.copy(alertOn = on))
+            if (on) Store.clearAlerted(ctx, id) // re-arm today's alert
+            Toast.makeText(
+                ctx,
+                if (on) "Alert on for ${r.displayName} (${r.activeFrom}–${r.activeTo})" else "Alert off for ${r.displayName}",
+                Toast.LENGTH_SHORT
+            ).show()
+            updateAll(ctx)
+            RefreshWorker.refreshSoon(ctx) // sets or cancels the scheduled alarm
+        }
     }
 
     companion object {
         const val ACTION_REFRESH = "sg.buscatch.REFRESH"
+        const val ACTION_TOGGLE_ALERT = "sg.buscatch.TOGGLE_ALERT"
+        private const val EXTRA_ROUTE_ID = "route_id"
+
+        /** One-tap alert switch for a stop. */
+        private fun bellIntent(ctx: Context, r: Route): PendingIntent = PendingIntent.getBroadcast(
+            ctx, ("bell" + r.id).hashCode(),
+            Intent(ctx, BusWidget::class.java).setAction(ACTION_TOGGLE_ALERT).putExtra(EXTRA_ROUTE_ID, r.id),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        private fun setBell(ctx: Context, v: RemoteViews, r: Route?) {
+            if (r == null) { v.setViewVisibility(R.id.bell, View.GONE); return }
+            v.setViewVisibility(R.id.bell, View.VISIBLE)
+            v.setImageViewResource(R.id.bell, if (r.alertOn) R.drawable.ic_bell_on else R.drawable.ic_bell_off)
+            v.setContentDescription(R.id.bell, if (r.alertOn) "Leave alert on. Tap to turn off." else "Leave alert off. Tap to turn on.")
+            v.setOnClickPendingIntent(R.id.bell, bellIntent(ctx, r))
+        }
+
+        private fun alertLabel(r: Route) = if (r.alertOn) "🔔 ${r.activeFrom}–${r.activeTo}" else "🔕 alert off"
 
         private const val AMBER = 0xFFFFB21A.toInt()
         private const val GREEN = 0xFF5EE08F.toInt()
@@ -66,6 +100,7 @@ class BusWidget : AppWidgetProvider() {
             all.forEach { mgr.updateAppWidget(it, build(ctx, it, refreshing = false)) }
             @Suppress("DEPRECATION")
             if (all.isNotEmpty()) mgr.notifyAppWidgetViewDataChanged(all, R.id.busList)
+            AllStopsWidget.updateAll(ctx)
         }
 
         fun update(ctx: Context, widgetId: Int) {
@@ -163,12 +198,13 @@ class BusWidget : AppWidgetProvider() {
             val r = routeFor(ctx, widgetId)
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             v.setOnClickPendingIntent(R.id.refresh, refreshIntent(ctx))
+            setBell(ctx, v, r)
             if (r == null) {
                 v.setTextViewText(R.id.sStop, "Bus Catch")
                 v.setTextViewText(R.id.sLeave, "Tap to pick a stop"); v.setTextColor(R.id.sLeave, AMBER)
                 return v
             }
-            v.setTextViewText(R.id.sStop, if (refreshing) "${r.displayName} · updating…" else r.displayName)
+            v.setTextViewText(R.id.sStop, if (refreshing) "${r.displayName} · updating…" else "${r.displayName} · ${alertLabel(r)}")
             val l = leaveFor(ctx, r, System.currentTimeMillis())
             val prefix = if (l.big == "NOW" || l.big.contains(":")) "Leave ${l.big}" else l.big
             v.setTextViewText(R.id.sLeave, if (l.detail.isNotEmpty()) "$prefix · ${l.detail}" else prefix)
@@ -201,6 +237,7 @@ class BusWidget : AppWidgetProvider() {
                 )
             }
             v.setOnClickPendingIntent(R.id.root, tap)
+            setBell(ctx, v, r)
             v.setOnClickPendingIntent(
                 R.id.refresh,
                 PendingIntent.getBroadcast(
@@ -235,7 +272,7 @@ class BusWidget : AppWidgetProvider() {
                     last == 0L -> "Stop ${r.stopCode}"
                     !Store.lastOk(ctx) -> "Offline · ${hm(last)}"
                     else -> "Live ${hm(last)}"
-                }
+                } + " · " + alertLabel(r)
             )
 
             // Every tracked bus, scrollable (rows come from BusListService)
