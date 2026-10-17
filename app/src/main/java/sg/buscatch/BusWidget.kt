@@ -6,6 +6,9 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.os.Build
+import android.os.Bundle
+import android.util.SizeF
 import android.view.View
 import android.widget.RemoteViews
 import java.text.SimpleDateFormat
@@ -26,6 +29,11 @@ class BusWidget : AppWidgetProvider() {
 
     override fun onEnabled(ctx: Context) {
         RefreshWorker.schedulePeriodic(ctx)
+    }
+
+    override fun onAppWidgetOptionsChanged(ctx: Context, mgr: AppWidgetManager, id: Int, newOptions: Bundle) {
+        // Older Android: pick the layout for the new size ourselves
+        mgr.updateAppWidget(id, build(ctx, id, refreshing = false))
     }
 
     override fun onDeleted(ctx: Context, ids: IntArray) {
@@ -70,7 +78,107 @@ class BusWidget : AppWidgetProvider() {
 
         private fun hm(ms: Long) = SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(ms))
 
+        /**
+         * Size-aware views. Android 12+ switches between them live as the widget is resized;
+         * older versions get one layout chosen from the widget's current size.
+         */
         fun build(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                return RemoteViews(
+                    mapOf(
+                        SizeF(100f, 40f) to buildTiny(ctx, widgetId),
+                        SizeF(170f, 40f) to buildSmall(ctx, widgetId, refreshing),
+                        SizeF(170f, 100f) to buildFull(ctx, widgetId, refreshing),
+                    )
+                )
+            }
+            val o = AppWidgetManager.getInstance(ctx).getAppWidgetOptions(widgetId)
+            val w = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH, 180)
+            val h = o.getInt(AppWidgetManager.OPTION_APPWIDGET_MAX_HEIGHT, 110)
+            return when {
+                h < 100 && w < 170 -> buildTiny(ctx, widgetId)
+                h < 100 -> buildSmall(ctx, widgetId, refreshing)
+                else -> buildFull(ctx, widgetId, refreshing)
+            }
+        }
+
+        private fun routeFor(ctx: Context, widgetId: Int): Route? {
+            val routes = Store.routes(ctx)
+            val chosen = Store.widgetRoute(ctx, widgetId)
+            return if (chosen == null) routes.firstOrNull() else routes.firstOrNull { it.id == chosen }
+        }
+
+        private fun tapIntent(ctx: Context, widgetId: Int, r: Route?): PendingIntent =
+            if (r == null) PendingIntent.getActivity(
+                ctx, widgetId,
+                Intent(ctx, WidgetConfigActivity::class.java)
+                    .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
+                    .setData(android.net.Uri.parse("buscatch://widget/$widgetId")),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            ) else PendingIntent.getActivity(
+                ctx, 0, Intent(ctx, MainActivity::class.java),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+            )
+
+        private fun refreshIntent(ctx: Context): PendingIntent = PendingIntent.getBroadcast(
+            ctx, 1, Intent(ctx, BusWidget::class.java).setAction(ACTION_REFRESH),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+
+        /** Leave advice for a stop: big text, detail text, colour. */
+        private data class Leave(val big: String, val detail: String, val color: Int)
+
+        private fun leaveFor(ctx: Context, r: Route, now: Long): Leave {
+            val plan = Planner.plan(r, Store.cachedStop(ctx, r.stopCode), now)
+            val at = plan?.leaveAtMs
+            val bus = plan?.target
+            return when {
+                plan == null -> Leave("…", "Loading", DIM)
+                plan.upcoming.isEmpty() -> Leave("--", "No buses coming", DIM)
+                at == null || bus == null -> Leave("MISSED", "Too late for the next bus", RED)
+                at <= now + 60_000 -> Leave("NOW", "${bus.service} at ${hm(bus.timeMs)}", GREEN)
+                else -> Leave(hm(at), "${bus.service} at ${hm(bus.timeMs)}", AMBER)
+            }
+        }
+
+        /** 2x1: leave time in big type, bus and stop underneath. */
+        private fun buildTiny(ctx: Context, widgetId: Int): RemoteViews {
+            val v = RemoteViews(ctx.packageName, R.layout.widget_tiny)
+            val r = routeFor(ctx, widgetId)
+            v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
+            if (r == null) {
+                v.setTextViewText(R.id.tBig, "Bus Catch"); v.setTextColor(R.id.tBig, AMBER)
+                v.setTextViewText(R.id.tSmall, "Tap to pick a stop")
+                return v
+            }
+            val l = leaveFor(ctx, r, System.currentTimeMillis())
+            v.setTextViewText(R.id.tBig, if (l.big == "NOW" || l.big.contains(":")) "Leave ${l.big}" else l.big)
+            v.setTextColor(R.id.tBig, l.color)
+            v.setTextViewText(R.id.tSmall, l.detail)
+            return v
+        }
+
+        /** 3x1: stop name over the leave line, with refresh. */
+        private fun buildSmall(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
+            val v = RemoteViews(ctx.packageName, R.layout.widget_small)
+            val r = routeFor(ctx, widgetId)
+            v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
+            v.setOnClickPendingIntent(R.id.refresh, refreshIntent(ctx))
+            if (r == null) {
+                v.setTextViewText(R.id.sStop, "Bus Catch")
+                v.setTextViewText(R.id.sLeave, "Tap to pick a stop"); v.setTextColor(R.id.sLeave, AMBER)
+                return v
+            }
+            v.setTextViewText(R.id.sStop, if (refreshing) "${r.displayName} · updating…" else r.displayName)
+            val l = leaveFor(ctx, r, System.currentTimeMillis())
+            val prefix = if (l.big == "NOW" || l.big.contains(":")) "Leave ${l.big}" else l.big
+            v.setTextViewText(R.id.sLeave, if (l.detail.isNotEmpty()) "$prefix · ${l.detail}" else prefix)
+            v.setTextColor(R.id.sLeave, l.color)
+            return v
+        }
+
+        /** 3x2 and up: every tracked bus with its next arrivals, plus the leave line. */
+        private fun buildFull(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_bus)
             val routes = Store.routes(ctx)
             val chosen = Store.widgetRoute(ctx, widgetId)
