@@ -2,6 +2,9 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.10.0
+- Removed the running puppy from the widgets. The Puppy theme keeps its cartoon puppy and paw prints.
+
 ## 1.9.1
 - Fix: the full Stop widget and the All stops widget showed "Can't load widget" since 1.8.0.
 - Build now checks widget layouts so this can't happen again.

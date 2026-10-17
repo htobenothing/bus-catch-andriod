@@ -68,13 +68,6 @@ class AllStopsWidget : AppWidgetProvider() {
                 }
             )
             v.setViewVisibility(R.id.allEmpty, if (routes.isEmpty()) View.VISIBLE else View.GONE)
-            // Puppy hurries when any stop is within 3 minutes of leave time
-            val now = System.currentTimeMillis()
-            val hurry = routes.any { r ->
-                val at = Planner.plan(r, Store.cachedStop(ctx, r.stopCode), now)?.leaveAtMs
-                at != null && at <= now + 3 * 60_000
-            }
-            Theme.runDog(v, Theme.of(ctx), hurry)
             v.setViewVisibility(R.id.allList, if (routes.isEmpty()) View.GONE else View.VISIBLE)
 
             @Suppress("DEPRECATION")
