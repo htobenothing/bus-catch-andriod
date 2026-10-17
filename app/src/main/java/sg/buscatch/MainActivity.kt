@@ -84,7 +84,7 @@ class MainActivity : Activity() {
         root.addView(list)
 
         root.addView(Button(this).apply {
-            text = "+ Add bus"
+            text = "+ Add stop"
             setOnClickListener { editDialog(null) }
         }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(8) })
 
@@ -143,7 +143,7 @@ class MainActivity : Activity() {
         list.removeAllViews()
         if (routes.isEmpty()) {
             list.addView(TextView(this).apply {
-                text = "No buses yet.\nTap “+ Add bus”, enter the 5-digit code on your bus stop sign, and pick your bus."
+                text = "No buses yet.\nTap “+ Add stop”, enter the 5-digit code on your bus stop sign, and tick the buses you take."
                 setTextColor(PAPER); textSize = 15f; gravity = Gravity.CENTER
                 setPadding(dp(16), dp(28), dp(16), dp(28))
                 background = rounded(PANEL)
@@ -165,7 +165,9 @@ class MainActivity : Activity() {
         }
         val head = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL }
         head.addView(TextView(this).apply {
-            text = r.service; textSize = 34f; setTextColor(LED)
+            val multi = r.services.size > 1
+            text = if (multi) r.services.joinToString("\n") else r.service
+            textSize = if (multi) 18f else 34f; setTextColor(LED)
             typeface = Typeface.create(Typeface.MONOSPACE, Typeface.BOLD)
             minWidth = dp(84)
         })
@@ -191,17 +193,20 @@ class MainActivity : Activity() {
             else -> {
                 val first = plan.upcoming.first()
                 val m = ((first.timeMs - now) / 60_000).coerceAtLeast(0)
-                val then = plan.upcoming.drop(1).take(2).joinToString(", ") { "${((it.timeMs - now) / 60_000).coerceAtLeast(0)}m" }
-                row.addView(cell("NEXT BUS", if (m == 0L) "Arr" else "$m min",
+                val multi = r.services.size > 1
+                val then = plan.upcoming.drop(1).take(2).joinToString(", ") {
+                    (if (multi) "${it.service} " else "") + "${((it.timeMs - now) / 60_000).coerceAtLeast(0)}m"
+                }
+                row.addView(cell(if (multi) "NEXT · ${first.service}" else "NEXT BUS", if (m == 0L) "Arr" else "$m min",
                     hm(first.timeMs) + (if (then.isNotEmpty()) " · then $then" else "") + (if (first.monitored) "" else " · est."), LED),
                     LinearLayout.LayoutParams(0, -2, 1f))
                 val leave = plan.leaveAtMs
                 val leaveCell = when {
                     leave == null -> cell("LEAVE HOME", "MISS", "Buses too close to reach", RED)
-                    leave <= now + 60_000 -> cell("LEAVE HOME", "NOW", "for the ${hm(plan.target!!.timeMs)} bus", GREEN)
+                    leave <= now + 60_000 -> cell("LEAVE HOME", "NOW", "for ${plan.target!!.service} at ${hm(plan.target.timeMs)}", GREEN)
                     else -> {
                         val lm = (leave - now) / 60_000
-                        cell("LEAVE IN", "$lm min", "by ${hm(leave)} for ${hm(plan.target!!.timeMs)}", if (lm <= 3) GREEN else LED)
+                        cell("LEAVE IN", "$lm min", "by ${hm(leave)} for ${plan.target!!.service} at ${hm(plan.target.timeMs)}", if (lm <= 3) GREEN else LED)
                     }
                 }
                 row.addView(leaveCell, LinearLayout.LayoutParams(0, -2, 1f))
@@ -262,7 +267,7 @@ class MainActivity : Activity() {
         form.addView(label("Bus stop code (5 digits on the stop sign)"))
         val codeRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val code = field("e.g. 83139", existing?.stopCode ?: "", InputType.TYPE_CLASS_NUMBER)
-        val svc = field("e.g. 155", existing?.service ?: "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
+        val svc = field("e.g. 155 or 155, 43", existing?.services?.joinToString(", ") ?: "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
         codeRow.addView(code, LinearLayout.LayoutParams(0, -2, 1f))
         codeRow.addView(Button(this).apply {
             text = "Find buses"; isAllCaps = false
@@ -270,7 +275,7 @@ class MainActivity : Activity() {
         })
         form.addView(codeRow)
 
-        form.addView(label("Bus number")); form.addView(svc)
+        form.addView(label("Bus numbers (one or more, separated by commas)")); form.addView(svc)
         form.addView(label("Label (optional)"))
         val name = field("e.g. Home to work", existing?.label ?: "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)
         form.addView(name)
@@ -299,7 +304,7 @@ class MainActivity : Activity() {
         form.addView(alert)
 
         val builder = AlertDialog.Builder(this)
-            .setTitle(if (existing == null) "Add a bus" else "Edit bus ${existing.service}")
+            .setTitle(if (existing == null) "Add a stop" else "Edit ${existing.serviceLabel}")
             .setView(ScrollView(this).apply { addView(form) })
             .setPositiveButton("Save", null)
             .setNegativeButton("Cancel", null)
@@ -308,12 +313,12 @@ class MainActivity : Activity() {
         dlg.setOnShowListener {
             dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
                 val c = code.text.toString().trim()
-                val s = svc.text.toString().trim().uppercase()
+                val s = Route.splitServices(svc.text.toString()).joinToString(",")
                 val f = from.text.toString().trim()
                 val t = to.text.toString().trim()
                 when {
                     !Regex("\\d{5}").matches(c) -> toast("Enter the 5-digit stop code from the bus stop sign.")
-                    s.isEmpty() -> toast("Enter or pick the bus number.")
+                    s.isEmpty() -> toast("Enter or pick at least one bus number.")
                     Route.parseTime(f) == null || Route.parseTime(t) == null -> toast("Alert times need 24-hour format, like 07:30.")
                     else -> {
                         val r = Route(
@@ -364,10 +369,18 @@ class MainActivity : Activity() {
                 when {
                     result == null -> toast("Couldn't reach live data. Check your connection, or type the bus number.")
                     result.isEmpty() -> toast("No buses running at $code right now. Type the bus number instead.")
-                    else -> AlertDialog.Builder(this)
-                        .setTitle("Buses at stop $code")
-                        .setItems(result.toTypedArray()) { _, i -> target.setText(result[i]) }
-                        .show()
+                    else -> {
+                        val current = Route.splitServices(target.text.toString()).toSet()
+                        val checked = BooleanArray(result.size) { result[it].uppercase() in current }
+                        AlertDialog.Builder(this)
+                            .setTitle("Buses at stop $code")
+                            .setMultiChoiceItems(result.toTypedArray(), checked) { _, i, on -> checked[i] = on }
+                            .setPositiveButton("Use selected") { _, _ ->
+                                target.setText(result.filterIndexed { i, _ -> checked[i] }.joinToString(", "))
+                            }
+                            .setNegativeButton("Cancel", null)
+                            .show()
+                    }
                 }
             }
         }

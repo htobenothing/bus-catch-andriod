@@ -10,7 +10,7 @@ import java.time.LocalTime
 data class Route(
     val id: String,
     val stopCode: String,
-    val service: String,
+    val service: String,      // one or more bus numbers, comma-separated: "961,190"
     val label: String,
     val walkMin: Int,
     val bufferMin: Int,
@@ -20,6 +20,8 @@ data class Route(
     val alertOn: Boolean,
 ) {
     val needMin get() = walkMin + bufferMin
+    val services: List<String> get() = splitServices(service)
+    val serviceLabel: String get() = services.joinToString(" / ")
     val displayName get() = label.ifBlank { "Stop $stopCode" }
 
     fun dayOk(date: LocalDate = LocalDate.now()): Boolean {
@@ -63,6 +65,9 @@ data class Route(
             days = o.optString("days", "weekdays"),
             alertOn = o.optBoolean("alertOn", true),
         )
+
+        fun splitServices(s: String): List<String> =
+            s.split(Regex("[,/\\s]+")).map { it.trim().uppercase() }.filter { it.isNotEmpty() }.distinct()
 
         fun parseTime(s: String): LocalTime? = try {
             val p = s.trim().split(":")

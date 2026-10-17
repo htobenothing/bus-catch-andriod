@@ -6,6 +6,7 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.util.TypedValue
 import android.view.View
 import android.widget.RemoteViews
 import java.text.SimpleDateFormat
@@ -84,7 +85,9 @@ class BusWidget : AppWidgetProvider() {
                 val r = routes.getOrNull(i)
                 if (r == null) { v.setViewVisibility(ids[0], View.GONE); return@forEachIndexed }
                 v.setViewVisibility(ids[0], View.VISIBLE)
-                v.setTextViewText(ids[1], r.service)
+                val multi = r.services.size > 1
+                v.setTextViewText(ids[1], if (multi) r.services.joinToString("\n") else r.service)
+                v.setTextViewTextSize(ids[1], TypedValue.COMPLEX_UNIT_SP, if (multi) 13f else 24f)
                 v.setTextViewText(ids[2], r.displayName)
 
                 val plan = Planner.plan(r, Store.cachedStop(ctx, r.stopCode), now)
@@ -93,13 +96,13 @@ class BusWidget : AppWidgetProvider() {
                     plan.upcoming.isEmpty() -> Triple("Not running now", "", DIM)
                     else -> {
                         // Clock times rather than "in N min", so the widget never shows stale countdowns
-                        val nxt = plan.upcoming.take(3).joinToString("  ") { hm(it.timeMs) }
+                        val nxt = plan.upcoming.take(3).joinToString("  ") { if (multi) "${it.service} ${hm(it.timeMs)}" else hm(it.timeMs) }
                         val est = if (plan.upcoming.first().monitored) "" else " est."
                         val leaveAt = plan.leaveAtMs
                         when {
                             leaveAt == null -> Triple(nxt + est, "Missed", RED)
-                            leaveAt <= now + 60_000 -> Triple(nxt + est, "Leave NOW", GREEN)
-                            else -> Triple(nxt + est, "Leave ${hm(leaveAt)}", AMBER)
+                            leaveAt <= now + 60_000 -> Triple(nxt + est, (if (multi) "${plan.target?.service} · " else "") + "Leave NOW", GREEN)
+                            else -> Triple(nxt + est, (if (multi) "${plan.target?.service} · " else "") + "Leave ${hm(leaveAt)}", AMBER)
                         }
                     }
                 }

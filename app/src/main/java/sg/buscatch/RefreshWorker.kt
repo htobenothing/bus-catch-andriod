@@ -94,28 +94,29 @@ class RefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
                 val leaveAt = plan.leaveAtMs ?: continue
                 val bus = plan.target ?: continue
                 if (leaveAt - now <= 45_000) {
-                    Notifier.leaveNow(ctx, r, bus.timeMs)
+                    Notifier.leaveNow(ctx, r, bus.timeMs, bus.service)
                     Store.markAlerted(ctx, r.id)
                     cancelAlarm(ctx, r)
                 } else {
-                    setAlarm(ctx, r, leaveAt, bus.timeMs)
+                    setAlarm(ctx, r, leaveAt, bus.timeMs, bus.service)
                 }
             }
         }
 
-        private fun alarmIntent(ctx: Context, r: Route, busMs: Long = 0): PendingIntent {
+        private fun alarmIntent(ctx: Context, r: Route, busMs: Long = 0, bus: String = ""): PendingIntent {
             val i = Intent(ctx, LeaveAlarmReceiver::class.java)
                 .putExtra(LeaveAlarmReceiver.EXTRA_ROUTE, r.id)
                 .putExtra(LeaveAlarmReceiver.EXTRA_BUS_MS, busMs)
+                .putExtra(LeaveAlarmReceiver.EXTRA_BUS, bus)
             return PendingIntent.getBroadcast(
                 ctx, r.id.hashCode(), i,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
         }
 
-        private fun setAlarm(ctx: Context, r: Route, atMs: Long, busMs: Long) {
+        private fun setAlarm(ctx: Context, r: Route, atMs: Long, busMs: Long, bus: String) {
             val am = ctx.getSystemService(AlarmManager::class.java) ?: return
-            val pi = alarmIntent(ctx, r, busMs)
+            val pi = alarmIntent(ctx, r, busMs, bus)
             val exactOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
             try {
                 if (exactOk) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)

@@ -10,6 +10,7 @@ data class Arrival(
     val monitored: Boolean,   // true = GPS-tracked, false = schedule estimate
     val load: String,         // SEA seats, SDA standing, LSD packed
     val type: String,         // SD single deck, DD double deck, BD bendy
+    val service: String = "",
 )
 
 data class Service(val no: String, val arrivals: List<Arrival>)
@@ -47,7 +48,7 @@ object Api {
                 val t = b.optString("time", "")
                 if (t.isBlank()) return@mapNotNull null
                 val ms = try { OffsetDateTime.parse(t).toInstant().toEpochMilli() } catch (e: Exception) { return@mapNotNull null }
-                Arrival(ms, b.optInt("monitored", 0) == 1, b.optString("load", ""), b.optString("type", ""))
+                Arrival(ms, b.optInt("monitored", 0) == 1, b.optString("load", ""), b.optString("type", ""), s.optString("no"))
             }.sortedBy { it.timeMs }
             out.add(Service(s.optString("no"), arrivals))
         }
@@ -65,9 +66,12 @@ data class Plan(
 object Planner {
     fun plan(route: Route, services: List<Service>?, now: Long = System.currentTimeMillis()): Plan? {
         services ?: return null
-        val svc = services.firstOrNull { it.no.equals(route.service, ignoreCase = true) }
-            ?: return Plan(emptyList(), null, null)
-        val upcoming = svc.arrivals.filter { it.timeMs > now - 30_000 }
+        val wanted = route.services.toSet()
+        // Merge arrivals of every chosen bus at this stop, soonest first
+        val upcoming = services.filter { it.no.uppercase() in wanted }
+            .flatMap { it.arrivals }
+            .filter { it.timeMs > now - 30_000 }
+            .sortedBy { it.timeMs }
         val need = route.needMin * 60_000L
         val walk = route.walkMin * 60_000L
         val target = upcoming.firstOrNull { it.timeMs - now >= need }

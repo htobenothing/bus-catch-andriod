@@ -31,7 +31,7 @@ object Notifier {
         Build.VERSION.SDK_INT < 33 ||
             ctx.checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
 
-    fun leaveNow(ctx: Context, r: Route, busMs: Long) {
+    fun leaveNow(ctx: Context, r: Route, busMs: Long, bus: String = "") {
         if (!canNotify(ctx)) return
         ensureChannel(ctx)
         val open = PendingIntent.getActivity(
@@ -40,14 +40,15 @@ object Notifier {
         )
         val time = if (busMs > 0) SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date(busMs)) else null
         val mins = if (busMs > 0) ((busMs - System.currentTimeMillis()) / 60_000).coerceAtLeast(0) else null
+        val busNo = bus.ifBlank { r.serviceLabel }
         val body = buildString {
-            append("Bus ${r.service} ")
+            append("Bus $busNo ")
             if (time != null) append("arrives $time (in $mins min) ")
             append("at ${r.displayName}. ${r.walkMin} min walk.")
         }
         val n = Notification.Builder(ctx, CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
-            .setContentTitle("Leave now for bus ${r.service}")
+            .setContentTitle("Leave now for bus $busNo")
             .setContentText(body)
             .setStyle(Notification.BigTextStyle().bigText(body))
             .setCategory(Notification.CATEGORY_ALARM)

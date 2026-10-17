@@ -3,7 +3,7 @@
 Live Singapore bus arrivals on your home screen, plus a "leave now" alert timed to your walk to the stop.
 
 ## Features
-- **Home-screen widget** showing up to 3 saved buses: next arrival times and when to leave home. Tap ⟳ to refresh, tap anywhere else to open the app.
+- **Home-screen widget** showing up to 3 saved stops (each can track several bus numbers): next arrival times and when to leave home. Tap ⟳ to refresh, tap anywhere else to open the app.
 - **Leave-home alerts** that fire even when the app is closed, once a day per bus, only inside the alert window you set (e.g. 07:00–09:00 on weekdays).
 - **Live data** from LTA DataMall via arrivelah (no API key needed). Shows crowding and whether the bus is GPS-tracked.
 - Refreshes every 15 minutes in the background and about every minute while an alert window is active.
