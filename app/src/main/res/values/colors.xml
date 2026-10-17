@@ -1,0 +1,7 @@
+<resources>
+    <color name="panel">#FF141A16</color>
+    <color name="led">#FFB21A</color>
+    <color name="dim">#9A917C</color>
+    <color name="paper">#E9E2CF</color>
+    <color name="go">#5EE08F</color>
+</resources>

@@ -1,0 +1,4 @@
+<resources>
+    <string name="app_name">Bus Catch</string>
+    <string name="widget_desc">Live arrivals for your saved buses and when to leave home</string>
+</resources>
