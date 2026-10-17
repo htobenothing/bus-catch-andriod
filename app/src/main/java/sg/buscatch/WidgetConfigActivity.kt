@@ -56,24 +56,35 @@ class WidgetConfigActivity : Activity() {
                 setOnClickListener { startActivity(Intent(this@WidgetConfigActivity, MainActivity::class.java)) }
             })
         } else {
+            val auto = current == null || current == WidgetRoutes.AUTO
+            box.addView(Button(this).apply {
+                isAllCaps = false
+                textSize = 15f
+                text = (if (auto) "✓ " else "") + "⟳ Auto: nearest alert time\nSwitches to whichever stop you'll need next"
+                setOnClickListener { choose(WidgetRoutes.AUTO) }
+            }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) })
+            box.addView(TextView(this).apply {
+                text = "Or always show one stop:"; textSize = 13f; setTextColor(Color.GRAY)
+                setPadding(0, 0, 0, dp(6))
+            })
             routes.forEach { r ->
                 box.addView(Button(this).apply {
                     isAllCaps = false
                     textSize = 15f
                     text = (if (r.id == current) "✓ " else "") + "${r.displayName}\n${r.serviceLabel} · stop ${r.stopCode}"
-                    setOnClickListener { choose(r) }
+                    setOnClickListener { choose(r.id) }
                 }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
             }
             box.addView(TextView(this).apply {
-                text = "Tip: add another Bus Catch widget for each stop you want on your home screen."
+                text = "Auto shows the stop whose alert window is open now, or the one that opens next. Long-press the widget to change this later."
                 textSize = 12f; setTextColor(Color.GRAY); setPadding(0, dp(8), 0, 0)
             })
         }
         setContentView(ScrollView(this).apply { addView(box) })
     }
 
-    private fun choose(r: Route) {
-        Store.setWidgetRoute(this, widgetId, r.id)
+    private fun choose(routeId: String) {
+        Store.setWidgetRoute(this, widgetId, routeId)
         BusWidget.update(this, widgetId)
         RefreshWorker.refreshSoon(this)
         setResult(RESULT_OK, Intent().putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId))

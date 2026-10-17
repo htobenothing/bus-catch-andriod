@@ -26,8 +26,7 @@ class BusListService : RemoteViewsService() {
         override fun onDataSetChanged() {
             pal = Theme.of(ctx)
             val routes = Store.routes(ctx)
-            val chosen = Store.widgetRoute(ctx, widgetId)
-            val r = if (chosen == null) routes.firstOrNull() else routes.firstOrNull { it.id == chosen }
+            val r = WidgetRoutes.resolve(ctx, widgetId)
             if (r == null) { rows = emptyList(); return }
             val services = Store.cachedStop(ctx, r.stopCode)
             val now = System.currentTimeMillis()

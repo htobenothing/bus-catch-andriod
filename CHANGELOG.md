@@ -2,6 +2,10 @@
 
 All notable changes to Bus Catch. Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.9.0
+- Stop widget **Auto** mode: shows the stop whose alert window is open now, or the one that opens next, so one widget covers all your stops. Marked with ⟳.
+- Auto is the first choice when placing a Stop widget, and widgets set up before stop picking now use it too.
+
 ## 1.8.0
 - In the Puppy theme, a cartoon puppy now runs back and forth along the bottom of the Stop widget (3×2 and bigger) and the All stops widget.
 - The puppy runs faster in the last 3 minutes before it's time to leave.

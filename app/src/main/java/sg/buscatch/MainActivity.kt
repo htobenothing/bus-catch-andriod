@@ -367,13 +367,13 @@ class MainActivity : Activity() {
         panel(para("1.  Long-press an empty spot on your home screen\n2.  Tap Widgets and find Bus Catch\n3.  Drag a widget out. The Stop widget asks which stop to show.")),
         sectionTitle("Bus Catch · Stop"),
         panel(
-            para("One stop. Add one per stop you want on your home screen."),
+            para("Shows one stop. Choose ⟳ Auto when placing it and it switches to whichever stop's alert time is nearest, so one widget covers all your stops."),
             para("🔔  Tap the bell to switch that stop's leave alert on or off.", LED),
             para("Resize it to change what it shows:", DIM, 13f),
             para("1×1   bus number and leave time\n2×1   leave time and which bus\n3×1   leave time, bus, stop and bell\n3×2+  every bus at the stop with next arrivals", PAPER, 13f).apply {
                 typeface = Typeface.MONOSPACE
             },
-            para("Long-press the widget to switch it to another stop (Android 12+).", DIM, 13f),
+            para("Long-press the widget to switch between Auto and a fixed stop (Android 12+).", DIM, 13f),
         ),
         sectionTitle("Bus Catch · All stops"),
         panel(para("Every saved stop in one scrolling list, with when to leave and the next buses. No setup needed.")),

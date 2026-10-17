@@ -143,8 +143,7 @@ class BusWidget : AppWidgetProvider() {
 
         private fun routeFor(ctx: Context, widgetId: Int): Route? {
             val routes = Store.routes(ctx)
-            val chosen = Store.widgetRoute(ctx, widgetId)
-            return if (chosen == null) routes.firstOrNull() else routes.firstOrNull { it.id == chosen }
+            return WidgetRoutes.resolve(ctx, widgetId)
         }
 
         private fun tapIntent(ctx: Context, widgetId: Int, r: Route?): PendingIntent =
@@ -241,7 +240,7 @@ class BusWidget : AppWidgetProvider() {
             v.setTextViewText(R.id.sBig, l.big)
             v.setTextColor(R.id.sBig, l.color)
             v.setTextViewText(R.id.sBus, if (l.bus.isNotEmpty()) "${l.bus} · ${l.busAt}" else l.detail)
-            v.setTextViewText(R.id.sStop, if (refreshing) "Updating…" else r.displayName)
+            v.setTextViewText(R.id.sStop, if (refreshing) "Updating…" else (if (WidgetRoutes.isAuto(ctx, widgetId)) "⟳ " else "") + r.displayName)
             return v
         }
 
@@ -250,9 +249,9 @@ class BusWidget : AppWidgetProvider() {
             val v = RemoteViews(ctx.packageName, R.layout.widget_bus)
             Theme.style(v, pal, text = intArrayOf(R.id.stopName, R.id.empty), dim = intArrayOf(R.id.updated), dog = R.id.dog)
             val routes = Store.routes(ctx)
-            val chosen = Store.widgetRoute(ctx, widgetId)
-            // Widgets from before per-stop widgets existed fall back to the first stop
-            val r = if (chosen == null) routes.firstOrNull() else routes.firstOrNull { it.id == chosen }
+            // Auto mode (or widgets set up before stop picking) shows the stop with the nearest alert time
+            val r = WidgetRoutes.resolve(ctx, widgetId)
+            val auto = WidgetRoutes.isAuto(ctx, widgetId)
             val now = System.currentTimeMillis()
 
             // Tapping a widget with no stop opens the stop picker; otherwise opens the app
@@ -298,7 +297,7 @@ class BusWidget : AppWidgetProvider() {
             v.setViewVisibility(R.id.busList, View.VISIBLE)
 
             // Header
-            v.setTextViewText(R.id.stopName, r.displayName)
+            v.setTextViewText(R.id.stopName, (if (auto) "⟳ " else "") + r.displayName)
             val last = Store.cachedAt(ctx, r.stopCode)
             v.setTextViewText(
                 R.id.updated,
