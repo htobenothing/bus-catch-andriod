@@ -45,6 +45,8 @@ class MainActivity : Activity() {
     private lateinit var status: TextView
     private lateinit var notices: LinearLayout
     private var puppy: PuppyRunView? = null
+    private var rewardsCard: LinearLayout? = null
+    private var headerDog: ImageView? = null
     private lateinit var addBtn: Button
     private lateinit var stopsPage: View
     private lateinit var widgetsPage: View
@@ -93,7 +95,9 @@ class MainActivity : Activity() {
             setPadding(dp(16), dp(16), dp(12), dp(8))
         }
         if (pal.puppy) header.addView(ImageView(this).apply {
-            setImageResource(R.drawable.ic_dog)
+            setImageBitmap(Rewards.puppyBitmap(this@MainActivity, dp(46)))
+            setOnClickListener { wardrobe() }
+            headerDog = this
         }, LinearLayout.LayoutParams(dp(46), dp(46)).apply { marginEnd = dp(10) })
         val titles = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         titles.addView(TextView(this).apply {
@@ -113,7 +117,8 @@ class MainActivity : Activity() {
         notices = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         list = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL }
         puppy = if (pal.puppy) PuppyRunView(this) else null
-        stopsPage = puppy?.let { page(it, notices, list) } ?: page(notices, list)
+        rewardsCard = if (pal.puppy) LinearLayout(this).apply { orientation = LinearLayout.VERTICAL } else null
+        stopsPage = puppy?.let { page(it, rewardsCard!!, notices, list) } ?: page(notices, list)
         widgetsPage = page(*widgetsContent())
         settingsPage = page()
         val pages = android.widget.FrameLayout(this).apply {
@@ -251,6 +256,8 @@ class MainActivity : Activity() {
         }
         status.setTextColor(if (routes.isNotEmpty() && last != 0L && Store.lastOk(this)) GREEN else DIM)
 
+        renderRewards()
+
         // Slim notices that lead to Settings
         notices.removeAllViews()
         Updater.known(this)?.let { notice("⬆  Version ${it.version} is ready · tap to update", GREEN) }
@@ -259,10 +266,10 @@ class MainActivity : Activity() {
         list.removeAllViews()
         if (routes.isEmpty()) {
             puppy?.apply { mode = PuppyRunView.Mode.SIT; caption = "Add a stop and I'll walk you to the bus!"; start() }
-            if (pal.puppy) list.addView(ImageView(this).apply { setImageResource(R.drawable.ic_dog) },
+            if (pal.puppy) list.addView(ImageView(this).apply { setImageBitmap(Rewards.puppyBitmap(this@MainActivity, dp(120))) },
                 LinearLayout.LayoutParams(dp(120), dp(120)).apply { gravity = Gravity.CENTER_HORIZONTAL; topMargin = dp(12) })
             list.addView(TextView(this).apply {
-                text = (if (pal.puppy) "Woof! " else "") + "No stops yet.\nTap “+ Add stop”, enter the 5-digit code on your bus stop sign, and tick the buses you take."
+                text = (if (pal.puppy) "Woof! " else "") + "No stops yet.\nTap “+ Add stop”, find your stop by name or near you, and tick the buses you take."
                 setTextColor(PAPER); textSize = 15f; gravity = Gravity.CENTER
                 setPadding(dp(16), dp(28), dp(16), dp(28))
                 background = rounded(PANEL)
@@ -289,6 +296,74 @@ class MainActivity : Activity() {
             else -> { p.mode = PuppyRunView.Mode.WALK; p.caption = "Strolling… leave in $mins min for ${plan.target?.service}" }
         }
         p.start()
+    }
+
+    /** Treats and streak, with the next thing to unlock. Tap for the wardrobe. */
+    private fun renderRewards() {
+        val card = rewardsCard ?: return
+        card.removeAllViews()
+        headerDog?.setImageBitmap(Rewards.puppyBitmap(this, dp(46)))
+        val t = Rewards.treats(this); val st = Rewards.streak(this)
+        card.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setPadding(dp(14), dp(10), dp(14), dp(10))
+            background = rounded(pal.notice)
+            setOnClickListener { wardrobe() }
+            addView(ImageView(context).apply { setImageBitmap(Rewards.puppyBitmap(this@MainActivity, dp(44))) },
+                LinearLayout.LayoutParams(dp(44), dp(44)).apply { marginEnd = dp(12) })
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(TextView(context).apply {
+                    text = "🦴 $t treat${if (t == 1) "" else "s"}" + (if (st > 0) "   🔥 $st-day streak" else "")
+                    textSize = 15f; setTextColor(PAPER); setTypeface(typeface, Typeface.BOLD)
+                })
+                addView(TextView(context).apply {
+                    text = Rewards.nextGoal(this@MainActivity)?.let { "Next: $it" }
+                        ?: "All outfits unlocked! Tap to dress up"
+                    textSize = 12f; setTextColor(DIM)
+                })
+                if (t == 0) addView(TextView(context).apply {
+                    text = "Tap “I'm going” when your alert rings to earn treats"
+                    textSize = 12f; setTextColor(DIM)
+                })
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+        }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+    }
+
+    /** Dress up the puppy: wear or take off each unlocked accessory. */
+    private fun wardrobe() {
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), dp(8)); gravity = Gravity.CENTER_HORIZONTAL }
+        val preview = ImageView(this).apply { setImageBitmap(Rewards.puppyBitmap(this@MainActivity, dp(120))) }
+        box.addView(preview, LinearLayout.LayoutParams(dp(120), dp(120)))
+        box.addView(TextView(this).apply {
+            text = "🦴 ${Rewards.treats(this@MainActivity)} treats · 🔥 ${Rewards.streak(this@MainActivity)}-day streak (best ${Rewards.bestStreak(this@MainActivity)})"
+            textSize = 13f; gravity = Gravity.CENTER; setPadding(0, dp(6), 0, dp(10))
+        })
+        Rewards.Acc.values().forEach { a ->
+            val open = Rewards.unlocked(this, a)
+            box.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+                setPadding(0, dp(4), 0, dp(4))
+                addView(TextView(context).apply {
+                    text = "${if (open) a.emoji else "🔒"}  ${a.title}\n" + (if (open) (if (a == Rewards.Acc.RAINCOAT) "Worn when rain is forecast" + (Weather.forecast(this@MainActivity)?.let { " · now $it" } ?: "") else "Unlocked") else "Needs ${a.need}")
+                    textSize = 14f
+                }, LinearLayout.LayoutParams(0, -2, 1f))
+                addView(Switch(context).apply {
+                    isEnabled = open
+                    isChecked = Rewards.wearing(this@MainActivity, a)
+                    setOnCheckedChangeListener { _, on ->
+                        Rewards.setWearing(this@MainActivity, a, on)
+                        preview.setImageBitmap(Rewards.puppyBitmap(this@MainActivity, dp(120)))
+                        renderRewards(); BusWidget.updateAll(this@MainActivity)
+                    }
+                })
+            }, LinearLayout.LayoutParams(-1, -2))
+        }
+        AlertDialog.Builder(this)
+            .setTitle("Puppy's wardrobe")
+            .setView(ScrollView(this).apply { addView(box) })
+            .setPositiveButton("Done", null)
+            .show()
     }
 
     private fun notice(text: String, color: Int) {
@@ -405,6 +480,17 @@ class MainActivity : Activity() {
         ),
         sectionTitle("Bus Pup · All stops"),
         panel(para("Every saved stop in one scrolling list, with when to leave and the next buses. No setup needed.")),
+        sectionTitle("Quick Settings tile"),
+        panel(
+            para("Swipe down twice from the top, tap ✏️ (edit), and drag the Bus Pup tile into your tiles."),
+            para("It shows when to leave. Tap it for the next buses, no unlocking needed.", DIM, 13f),
+        ),
+        sectionTitle("Puppy rewards"),
+        panel(
+            para("Tap “I'm going” when your leave alert rings and the puppy gets a 🦴 treat. Go every day you're alerted to build a 🔥 streak."),
+            para("🧣 Scarf at 3 treats · 🕶️ Sunglasses at a 5-day streak · 🥳 Party hat at 10 treats · 🌧️ Raincoat at 15 treats, worn when rain is forecast near your stop.", DIM, 13f),
+            para("Tap the puppy to open its wardrobe. Rewards show in the Puppy theme.", DIM, 13f),
+        ),
         sectionTitle("Reading the colours"),
         panel(
             para("Amber   leave at this time", LED),
@@ -574,6 +660,7 @@ class MainActivity : Activity() {
 
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
+        StopPicker.onPermissionResult(requestCode)
         render(); if (tab == 2) renderSettings(); renderTabs()
     }
 
@@ -654,10 +741,22 @@ class MainActivity : Activity() {
             this.hint = hint; setText(value); inputType = type; setSingleLine()
         }
 
-        form.addView(label("Bus stop code (5 digits on the stop sign)"))
-        val codeRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         val code = field("e.g. 83139", existing?.stopCode ?: "", InputType.TYPE_CLASS_NUMBER)
         val svc = field("e.g. 155 or 155, 43", existing?.services?.joinToString(", ") ?: "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_CHARACTERS)
+        val name = field("e.g. Home to work", existing?.label ?: "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)
+
+        form.addView(Button(this).apply {
+            text = "🔎 Find stop by name or near me"; isAllCaps = false
+            setOnClickListener {
+                StopPicker(this@MainActivity, io) { stop ->
+                    code.setText(stop.code)
+                    if (name.text.isBlank()) name.setText(stop.name)
+                    findBuses(stop.code, svc) // straight to ticking the buses at that stop
+                }.show()
+            }
+        }, LinearLayout.LayoutParams(-1, -2).apply { topMargin = dp(6) })
+        form.addView(label("Or type the bus stop code (5 digits on the stop sign)"))
+        val codeRow = LinearLayout(this).apply { orientation = LinearLayout.HORIZONTAL }
         codeRow.addView(code, LinearLayout.LayoutParams(0, -2, 1f))
         codeRow.addView(Button(this).apply {
             text = "Find buses"; isAllCaps = false
@@ -667,7 +766,6 @@ class MainActivity : Activity() {
 
         form.addView(label("Bus numbers (one or more, separated by commas)")); form.addView(svc)
         form.addView(label("Label (optional)"))
-        val name = field("e.g. Home to work", existing?.label ?: "", InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES)
         form.addView(name)
 
         val walk = field("5", (existing?.walkMin ?: 5).toString(), InputType.TYPE_CLASS_NUMBER)

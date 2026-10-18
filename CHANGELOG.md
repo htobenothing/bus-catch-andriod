@@ -2,6 +2,11 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.17.0
+- **Find a stop by name or near you**: when adding a stop, tap 🔎 to search (e.g. "Jurong Point") or tap 📍 Stops near me. No need to know the 5-digit code.
+- **Quick Settings tile**: add Bus Pup to your quick settings to see when to leave, and tap it for the next buses without unlocking.
+- **Puppy rewards** (Puppy theme): tap "I'm going" on a leave alert to give the puppy a 🦴 treat. Build daily streaks and unlock a scarf, sunglasses, a party hat and a raincoat (worn automatically when rain is forecast near your stop). Tap the puppy to open its wardrobe; outfits show in the app, on widgets and on the alert.
+
 ## 1.16.0
 - **Live updates during alert ranges**: bus times refresh every 10 seconds while the screen is on, updating the widgets and a quiet **Live** notification that shows the next buses and your leave time. Pauses when the screen is off; stops when the range ends. Switch it off in Settings → Alerts, or tap **Pause until range ends** on the notification.
 - Tapping ⟳ on a widget now fetches fresh times immediately.

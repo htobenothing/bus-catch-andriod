@@ -91,6 +91,7 @@ class LiveService : Service() {
                 try { val raw = Api.fetchRaw(code); Api.parse(raw); Store.cacheStop(this, code, raw) } catch (e: Exception) { ok = false }
             }
             Store.setLastRefresh(this, ok)
+            Weather.update(this)
             BusWidget.updateAll(this)
             AlertEngine.tick(this, fetch = false) // keep the leave alarm on the latest times
         }

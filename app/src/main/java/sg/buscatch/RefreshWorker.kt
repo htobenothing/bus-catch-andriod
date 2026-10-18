@@ -76,6 +76,7 @@ class RefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
 
             AlertEngine.tick(ctx, fetch = false) // re-plan leave alarms with the fresh times
             Updater.dailyCheck(ctx)
+            Weather.update(ctx)
             BusWidget.updateAll(ctx)
 
             if (routes.any { it.alertOn && WidgetRoutes.openNow(it) && !Store.alertedToday(ctx, it.id) }) {

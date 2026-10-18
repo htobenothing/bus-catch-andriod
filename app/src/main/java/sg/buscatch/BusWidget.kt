@@ -248,6 +248,7 @@ class BusWidget : AppWidgetProvider() {
         private fun buildSmall(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_small)
             Theme.style(v, pal, text = intArrayOf(R.id.sBus), dim = intArrayOf(R.id.sLabel, R.id.sStop), dog = R.id.dog)
+            Theme.dressDog(ctx, v, pal)
             val r = routeFor(ctx, widgetId)
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             setBell(ctx, v, r)
@@ -272,6 +273,7 @@ class BusWidget : AppWidgetProvider() {
         private fun buildFull(ctx: Context, widgetId: Int, refreshing: Boolean): RemoteViews {
             val v = RemoteViews(ctx.packageName, R.layout.widget_bus)
             Theme.style(v, pal, text = intArrayOf(R.id.stopName, R.id.empty), dim = intArrayOf(R.id.updated), dog = R.id.dog)
+            Theme.dressDog(ctx, v, pal)
             val routes = Store.routes(ctx)
             // Auto mode (or widgets set up before stop picking) shows the stop with the nearest alert time
             val r = WidgetRoutes.resolve(ctx, widgetId)

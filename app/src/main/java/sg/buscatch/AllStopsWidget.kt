@@ -45,6 +45,7 @@ class AllStopsWidget : AppWidgetProvider() {
             val v = RemoteViews(ctx.packageName, R.layout.widget_all)
             Theme.style(v, Theme.of(ctx), text = intArrayOf(R.id.allEmpty), dim = intArrayOf(R.id.allUpdated),
                 accent = intArrayOf(R.id.allTitle), dog = R.id.dog)
+            Theme.dressDog(ctx, v, Theme.of(ctx))
             val open = PendingIntent.getActivity(
                 ctx, 0, Intent(ctx, MainActivity::class.java),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT

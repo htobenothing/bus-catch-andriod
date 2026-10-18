@@ -56,6 +56,13 @@ object Theme {
     }
 
 
+    /** Show the puppy in its current outfit (Puppy theme). */
+    fun dressDog(ctx: Context, v: RemoteViews, p: Palette, dog: Int = R.id.dog) {
+        if (!p.puppy) return
+        val px = (48 * ctx.resources.displayMetrics.density).toInt()
+        v.setImageViewBitmap(dog, Rewards.puppyBitmap(ctx, px))
+    }
+
     /**
      * Puppy progress road on the full Stop widget (Puppy theme): the puppy sits at one of 11
      * spots and moves a spot closer to the bus stop for every 2 minutes off leave time,

@@ -36,7 +36,7 @@ class AlarmActivity : Activity() {
             orientation = LinearLayout.VERTICAL; gravity = Gravity.CENTER
             setBackgroundColor(pal.bg); setPadding(dp(28), dp(40), dp(28), dp(40))
         }
-        if (pal.puppy) box.addView(ImageView(this).apply { setImageResource(R.drawable.ic_dog) },
+        if (pal.puppy) box.addView(ImageView(this).apply { setImageBitmap(Rewards.puppyBitmap(this@AlarmActivity, dp(140))) },
             LinearLayout.LayoutParams(dp(140), dp(140)).apply { bottomMargin = dp(16) })
         else box.addView(TextView(this).apply {
             text = "🚌"; textSize = 72f; gravity = Gravity.CENTER
@@ -56,7 +56,7 @@ class AlarmActivity : Activity() {
             setTextColor(if (pal.puppy) 0xFFFFFFFF.toInt() else pal.bg)
             background = GradientDrawable().apply { setColor(pal.go); cornerRadius = dp(32).toFloat() }
             setPadding(dp(40), dp(16), dp(40), dp(16))
-            setOnClickListener { stopAndClose() }
+            setOnClickListener { going() }
         })
         setContentView(box)
     }
@@ -64,6 +64,15 @@ class AlarmActivity : Activity() {
     private fun stopAndClose() {
         Notifier.dismiss(this, notifId)
         finish()
+    }
+
+    /** "I'm going": stop the alarm and give the puppy its treat. */
+    private fun going() {
+        Rewards.onGoing(this, intent.getStringExtra(Notifier.EXTRA_ROUTE_ID))?.let {
+            android.widget.Toast.makeText(this, it, android.widget.Toast.LENGTH_LONG).show()
+        }
+        BusWidget.updateAll(this)
+        stopAndClose()
     }
 
     @Deprecated("Deprecated in Java")

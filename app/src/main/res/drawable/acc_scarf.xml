@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Red knitted scarf under the chin, with a hanging end -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp" android:height="48dp" android:viewportWidth="48" android:viewportHeight="48">
+    <path android:fillColor="#E04848" android:pathData="M13,35.5 Q24,42.5 35,35.5 L35.5,39.5 Q24,46.5 12.5,39.5 Z" />
+    <path android:fillColor="#E04848" android:pathData="M27.5,41.5 L32.5,40.5 L33.5,47 L28.5,47.5 Z" />
+    <path android:fillColor="#FFFFFF" android:pathData="M28.2,45 L33.2,44.3 L33.4,45.4 L28.4,46.1 Z" />
+    <path android:strokeColor="#B83232" android:strokeWidth="0.8" android:fillColor="#00000000"
+        android:pathData="M17,38.6 l0.6,2.4 M21,40 l0.4,2.4 M25,40.4 l0,2.4 M29,40 l-0.4,2.4" />
+</vector>

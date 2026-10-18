@@ -28,6 +28,8 @@ object Notifier {
     const val EXTRA_ID = "notif_id"
     const val EXTRA_TITLE = "title"
     const val EXTRA_BODY = "body"
+    const val EXTRA_ROUTE_ID = "route_id"
+    const val ACTION_GOING = "sg.buscatch.IM_GOING"
     const val TEST_ID = 4343
 
     fun ensureChannel(ctx: Context) {
@@ -66,22 +68,29 @@ object Notifier {
             append("at ${r.displayName}. ${r.walkMin} min walk.")
         }
         val title = (if (Theme.of(ctx).puppy) "🐶 Woof! " else "") + "Leave now for bus $busNo"
-        alarm(ctx, r.id.hashCode(), title, body)
+        Rewards.onAlert(ctx)
+        alarm(ctx, r.id.hashCode(), title, body, r.id)
     }
 
     fun testAlarm(ctx: Context) =
         alarm(ctx, TEST_ID, (if (Theme.of(ctx).puppy) "🐶 Woof! " else "") + "Test alert",
             "This is how Bus Pup tells you to leave. Tap I'm going to stop it.")
 
-    private fun alarm(ctx: Context, id: Int, title: String, body: String) {
+    private fun alarm(ctx: Context, id: Int, title: String, body: String, routeId: String? = null) {
         if (!canNotify(ctx)) return
         ensureChannel(ctx)
         val page = Intent(ctx, AlarmActivity::class.java)
             .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-            .putExtra(EXTRA_ID, id).putExtra(EXTRA_TITLE, title).putExtra(EXTRA_BODY, body)
+            .putExtra(EXTRA_ID, id).putExtra(EXTRA_TITLE, title).putExtra(EXTRA_BODY, body).putExtra(EXTRA_ROUTE_ID, routeId)
         val full = PendingIntent.getActivity(ctx, id, page, PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
         val dismiss = PendingIntent.getBroadcast(
             ctx, id, Intent(ctx, DismissReceiver::class.java).setAction(ACTION_DISMISS).putExtra(EXTRA_ID, id),
+            PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
+        )
+        // "I'm going" stops the ringing and earns the puppy a treat
+        val going = PendingIntent.getBroadcast(
+            ctx, id + 1, Intent(ctx, DismissReceiver::class.java).setAction(ACTION_GOING)
+                .putExtra(EXTRA_ID, id).putExtra(EXTRA_ROUTE_ID, routeId),
             PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
         )
         val n = Notification.Builder(ctx, CHANNEL)
@@ -94,7 +103,7 @@ object Notifier {
             .setContentIntent(full)
             .setFullScreenIntent(full, true)
             .setDeleteIntent(dismiss)
-            .addAction(Notification.Action.Builder(null, "I'm going", dismiss).build())
+            .addAction(Notification.Action.Builder(null, "I'm going", going).build())
             .setAutoCancel(true)
             .setTimeoutAfter(2 * 60_000L)
             .build()
@@ -111,5 +120,11 @@ object Notifier {
 class DismissReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         Notifier.dismiss(ctx, intent.getIntExtra(Notifier.EXTRA_ID, 0))
+        if (intent.action == Notifier.ACTION_GOING) {
+            Rewards.onGoing(ctx, intent.getStringExtra(Notifier.EXTRA_ROUTE_ID))?.let {
+                android.widget.Toast.makeText(ctx, it, android.widget.Toast.LENGTH_LONG).show()
+            }
+            BusWidget.updateAll(ctx)
+        }
     }
 }
