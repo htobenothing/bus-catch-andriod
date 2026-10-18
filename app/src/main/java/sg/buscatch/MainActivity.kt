@@ -69,7 +69,7 @@ class MainActivity : Activity() {
         override fun run() { render(); ui.postDelayed(this, 5_000) }
     }
     private val poll = object : Runnable {
-        override fun run() { fetchAll(); ui.postDelayed(this, 30_000) }
+        override fun run() { fetchAll(); ui.postDelayed(this, 10_000) }
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -464,6 +464,25 @@ class MainActivity : Activity() {
             } catch (e: Exception) {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
+        })
+        alerts.addView(LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL; gravity = Gravity.CENTER_VERTICAL
+            setPadding(0, dp(4), 0, dp(8))
+            addView(LinearLayout(context).apply {
+                orientation = LinearLayout.VERTICAL
+                addView(TextView(context).apply { text = "Live updates"; textSize = 15f; setTextColor(PAPER) })
+                addView(TextView(context).apply {
+                    text = "During alert ranges, refresh bus times every 10 s while the screen is on. Shows a quiet Live notification."
+                    textSize = 12f; setTextColor(DIM)
+                })
+            }, LinearLayout.LayoutParams(0, -2, 1f))
+            addView(android.widget.Switch(context).apply {
+                isChecked = Store.liveEnabled(this@MainActivity)
+                setOnCheckedChangeListener { _, on ->
+                    Store.setLiveEnabled(this@MainActivity, on)
+                    if (on) AlertEngine.rescheduleAsync(this@MainActivity, fetch = true) else LiveService.stop(this@MainActivity)
+                }
+            })
         })
         alerts.addView(Button(this).apply {
             text = "🔔 Test alert in 5 seconds"; isAllCaps = false

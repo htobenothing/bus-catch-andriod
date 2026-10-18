@@ -2,6 +2,11 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.16.0
+- **Live updates during alert ranges**: bus times refresh every 10 seconds while the screen is on, updating the widgets and a quiet **Live** notification that shows the next buses and your leave time. Pauses when the screen is off; stops when the range ends. Switch it off in Settings → Alerts, or tap **Pause until range ends** on the notification.
+- Tapping ⟳ on a widget now fetches fresh times immediately.
+- The app's Stops tab refreshes every 10 seconds while open.
+
 ## 1.15.0
 - **Alerts rebuilt so they arrive on time**, including on Xiaomi:
   - the phone's alarm clock wakes Bus Pup at the start of each alert range to fetch live times and set the leave alarm, instead of waiting for background refresh

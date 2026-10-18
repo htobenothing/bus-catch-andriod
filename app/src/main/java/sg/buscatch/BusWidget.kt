@@ -46,7 +46,16 @@ class BusWidget : AppWidgetProvider() {
         if (intent.action == ACTION_REFRESH) {
             val mgr = AppWidgetManager.getInstance(ctx)
             ids(ctx).forEach { mgr.updateAppWidget(it, build(ctx, it, refreshing = true)) }
-            RefreshWorker.refreshSoon(ctx)
+            // Fetch right now instead of queueing background work (which some phones delay)
+            val pending = goAsync()
+            Thread {
+                try {
+                    Store.fetchStops(ctx, Store.routes(ctx).map { it.stopCode })
+                    AlertEngine.tick(ctx, fetch = false)
+                    updateAll(ctx)
+                } catch (e: Exception) {
+                } finally { pending.finish() }
+            }.start()
         }
         if (intent.action == ACTION_TOGGLE_ALERT) {
             val id = intent.getStringExtra(EXTRA_ROUTE_ID) ?: return

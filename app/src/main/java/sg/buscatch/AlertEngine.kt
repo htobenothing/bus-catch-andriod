@@ -74,8 +74,11 @@ object AlertEngine {
             tickAt(maxOf(now + 60_000, minOf(leave - 3 * 60_000, now + 5 * 60_000)))
         }
 
-        // Wake at the next range start of any stop with the alert on
-        routes.filter { it.alertOn }
+        // Live updates: run while a range is open
+        LiveService.startIfNeeded(ctx)
+
+        // Wake at the next range start of any stop with the alert on (any stop, if live updates are on)
+        routes.filter { it.alertOn || Store.liveEnabled(ctx) }
             .mapNotNull { WidgetRoutes.nextStart(it, nowLdt) }
             .minOrNull()?.let { tickAt(toMs(it)) }
 

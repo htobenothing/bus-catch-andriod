@@ -125,6 +125,23 @@ object Store {
     }
     fun lastOk(ctx: Context): Boolean = prefs(ctx).getBoolean("last_ok", true)
 
+    // ---- live updates during alert ranges ----
+    fun liveEnabled(ctx: Context): Boolean = prefs(ctx).getBoolean("live_enabled", true)
+    fun setLiveEnabled(ctx: Context, on: Boolean) {
+        prefs(ctx).edit().putBoolean("live_enabled", on).remove("live_paused_until").apply()
+    }
+    fun livePausedUntil(ctx: Context): Long = prefs(ctx).getLong("live_paused_until", 0)
+    fun setLivePausedUntil(ctx: Context, ms: Long) { prefs(ctx).edit().putLong("live_paused_until", ms).apply() }
+
+    /** Fetch live times for these stops now and cache them. Blocking; call off the main thread. */
+    fun fetchStops(ctx: Context, codes: Collection<String>) {
+        var ok = true
+        codes.distinct().forEach { code ->
+            try { val raw = Api.fetchRaw(code); Api.parse(raw); cacheStop(ctx, code, raw) } catch (e: Exception) { ok = false }
+        }
+        if (codes.isNotEmpty()) setLastRefresh(ctx, ok)
+    }
+
     // ---- which stop each home-screen widget shows ----
     fun widgetRoute(ctx: Context, widgetId: Int): String? = prefs(ctx).getString("widget_$widgetId", null)
     fun setWidgetRoute(ctx: Context, widgetId: Int, routeId: String) {
