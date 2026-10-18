@@ -74,61 +74,14 @@ class RefreshWorker(ctx: Context, params: WorkerParameters) : CoroutineWorker(ct
             }
             if (routes.isNotEmpty()) Store.setLastRefresh(ctx, allOk)
 
-            handleAlerts(ctx, routes)
+            AlertEngine.tick(ctx, fetch = false) // re-plan leave alarms with the fresh times
             Updater.dailyCheck(ctx)
             BusWidget.updateAll(ctx)
 
-            if (routes.any { it.alertOn && it.inWindow(leadMin = WINDOW_LEAD_MIN) && !Store.alertedToday(ctx, it.id) }) {
+            if (routes.any { it.alertOn && WidgetRoutes.openNow(it) && !Store.alertedToday(ctx, it.id) }) {
                 scheduleFast(ctx)
             }
             Unit
-        }
-
-        private fun handleAlerts(ctx: Context, routes: List<Route>) {
-            val now = System.currentTimeMillis()
-            for (r in routes) {
-                if (!r.alertOn || !r.inWindow() || Store.alertedToday(ctx, r.id)) {
-                    cancelAlarm(ctx, r)
-                    continue
-                }
-                val plan = Planner.plan(r, Store.cachedStop(ctx, r.stopCode)) ?: continue
-                val leaveAt = plan.leaveAtMs ?: continue
-                val bus = plan.target ?: continue
-                if (leaveAt - now <= 45_000) {
-                    Notifier.leaveNow(ctx, r, bus.timeMs, bus.service)
-                    Store.markAlerted(ctx, r.id)
-                    cancelAlarm(ctx, r)
-                } else {
-                    setAlarm(ctx, r, leaveAt, bus.timeMs, bus.service)
-                }
-            }
-        }
-
-        private fun alarmIntent(ctx: Context, r: Route, busMs: Long = 0, bus: String = ""): PendingIntent {
-            val i = Intent(ctx, LeaveAlarmReceiver::class.java)
-                .putExtra(LeaveAlarmReceiver.EXTRA_ROUTE, r.id)
-                .putExtra(LeaveAlarmReceiver.EXTRA_BUS_MS, busMs)
-                .putExtra(LeaveAlarmReceiver.EXTRA_BUS, bus)
-            return PendingIntent.getBroadcast(
-                ctx, r.id.hashCode(), i,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-        }
-
-        private fun setAlarm(ctx: Context, r: Route, atMs: Long, busMs: Long, bus: String) {
-            val am = ctx.getSystemService(AlarmManager::class.java) ?: return
-            val pi = alarmIntent(ctx, r, busMs, bus)
-            val exactOk = Build.VERSION.SDK_INT < Build.VERSION_CODES.S || am.canScheduleExactAlarms()
-            try {
-                if (exactOk) am.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
-                else am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
-            } catch (e: SecurityException) {
-                am.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, atMs, pi)
-            }
-        }
-
-        private fun cancelAlarm(ctx: Context, r: Route) {
-            ctx.getSystemService(AlarmManager::class.java)?.cancel(alarmIntent(ctx, r))
         }
     }
 }

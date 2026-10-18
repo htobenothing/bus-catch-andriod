@@ -72,6 +72,19 @@ object WidgetRoutes {
         return false
     }
 
+    /** End of the range that contains [now], or null if [now] isn't inside one. */
+    fun currentRangeEnd(r: Route, now: LocalDateTime = LocalDateTime.now()): LocalDateTime? {
+        val (from, to) = range(r) ?: return null
+        for (back in 0L..1L) {
+            val day = now.toLocalDate().minusDays(back)
+            if (!r.dayOk(day)) continue
+            val start = day.atTime(from)
+            val end = if (to.isAfter(from)) day.atTime(to) else day.plusDays(1).atTime(to)
+            if (!now.isBefore(start) && !now.isAfter(end)) return end
+        }
+        return null
+    }
+
     /** When this stop's range next opens, looking a week ahead. */
     fun nextStart(r: Route, now: LocalDateTime = LocalDateTime.now()): LocalDateTime? {
         val (from, _) = range(r) ?: return null

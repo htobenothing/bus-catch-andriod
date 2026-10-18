@@ -2,6 +2,16 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.15.0
+- **Alerts rebuilt so they arrive on time**, including on Xiaomi:
+  - the phone's alarm clock wakes Bus Pup at the start of each alert range to fetch live times and set the leave alarm, instead of waiting for background refresh
+  - re-checks 3 minutes before you leave, in case the bus moved
+  - the leave alarm is an alarm-clock alarm, so it isn't delayed by battery saving
+  - alerts are rescheduled after a restart, app update or time change
+- **Alarm-style alert**: rings at alarm volume (even on silent) and vibrates until you tap **I'm going**, with a full-screen Leave now page on the lock screen.
+- Settings → Alerts: **Test alert in 5 seconds**, plus Xiaomi shortcuts for Autostart, battery saver and floating/lock-screen notifications.
+- An alert is skipped if you'd have to leave after the range ends.
+
 ## 1.14.0
 - Stop widget **Auto** mode follows alert time ranges:
   - inside a stop's range → that stop (if ranges overlap, the bus you must leave for first)

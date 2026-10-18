@@ -61,6 +61,7 @@ class BusWidget : AppWidgetProvider() {
             ).show()
             updateAll(ctx)
             RefreshWorker.refreshSoon(ctx) // sets or cancels the scheduled alarm
+            AlertEngine.rescheduleAsync(ctx, fetch = true)
         }
     }
 

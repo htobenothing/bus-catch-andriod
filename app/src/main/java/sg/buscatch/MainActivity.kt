@@ -201,6 +201,7 @@ class MainActivity : Activity() {
 
     override fun onResume() {
         super.onResume()
+        AlertEngine.rescheduleAsync(this) // keep the alert chain alive
         // Back from "allow installs from this app": continue the update
         pendingApk?.let { apk ->
             if (Build.VERSION.SDK_INT < 26 || packageManager.canRequestPackageInstalls()) {
@@ -464,11 +465,36 @@ class MainActivity : Activity() {
                 startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
             }
         })
-        alerts.addView(para("If alerts arrive late, set battery usage to Unrestricted. This matters most on Xiaomi, Oppo, Vivo and Samsung.", DIM, 13f))
         alerts.addView(Button(this).apply {
-            text = "Open battery settings"; isAllCaps = false
+            text = "🔔 Test alert in 5 seconds"; isAllCaps = false
             setOnClickListener {
-                startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+                AlertEngine.test(this@MainActivity)
+                toast("Test alert in 5 seconds. Lock the phone to see the full-screen alert.")
+            }
+        })
+        alerts.addView(para("Rings at alarm volume, even on silent, until you tap I'm going.", DIM, 12f))
+
+        val xiaomi = Build.MANUFACTURER.lowercase().let { it.contains("xiaomi") || it.contains("redmi") || it.contains("poco") }
+        alerts.addView(para(
+            if (xiaomi) "Xiaomi phones block background apps by default. Do all three so alerts arrive:"
+            else "If alerts arrive late, let Bus Pup run in the background:",
+            PAPER, 13f).apply { setPadding(0, dp(12), 0, dp(4)) })
+        if (xiaomi) alerts.addView(Button(this).apply {
+            text = "1. Turn on Autostart"; isAllCaps = false
+            setOnClickListener { openMiui("com.miui.securitycenter", "com.miui.permcenter.autostart.AutoStartManagementActivity") }
+        })
+        alerts.addView(Button(this).apply {
+            text = if (xiaomi) "2. Battery saver → No restrictions" else "Battery: Unrestricted"; isAllCaps = false
+            setOnClickListener {
+                if (xiaomi) openMiui("com.miui.powerkeeper", "com.miui.powerkeeper.ui.HiddenAppsConfigActivity",
+                    Intent().putExtra("package_name", packageName).putExtra("package_label", getString(R.string.app_name)))
+                else startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName")))
+            }
+        })
+        alerts.addView(Button(this).apply {
+            text = if (xiaomi) "3. Notifications: allow Floating & Lock screen" else "Notification settings"; isAllCaps = false
+            setOnClickListener {
+                startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE, packageName))
             }
         })
         box.addView(alerts)
@@ -530,6 +556,13 @@ class MainActivity : Activity() {
     override fun onRequestPermissionsResult(requestCode: Int, permissions: Array<out String>, grantResults: IntArray) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
         render(); if (tab == 2) renderSettings(); renderTabs()
+    }
+
+    /** Open a Xiaomi settings page; falls back to the app's system settings. Returns true if opened. */
+    private fun openMiui(pkg: String, cls: String, base: Intent = Intent()): Boolean = try {
+        startActivity(base.setClassName(pkg, cls)); true
+    } catch (e: Exception) {
+        startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))); false
     }
 
     private fun shareApp() {
@@ -668,6 +701,7 @@ class MainActivity : Activity() {
                             days = dayKeys[days.selectedItemPosition], alertOn = alert.isChecked,
                         )
                         Store.upsert(this, r)
+                        AlertEngine.rescheduleAsync(this, fetch = true)
                         // Changing a route's settings re-arms today's alert
                         Store.clearAlerted(this, r.id)
                         RefreshWorker.refreshSoon(this)
@@ -681,7 +715,7 @@ class MainActivity : Activity() {
                 var armed = false
                 del.setOnClickListener {
                     if (!armed) { armed = true; del.text = "Tap again"; return@setOnClickListener }
-                    Store.delete(this, ex.id); BusWidget.updateAll(this); render(); dlg.dismiss()
+                    Store.delete(this, ex.id); BusWidget.updateAll(this); AlertEngine.rescheduleAsync(this); render(); dlg.dismiss()
                 }
             }
         }
