@@ -103,6 +103,17 @@ class BusWidget : AppWidgetProvider() {
             @Suppress("DEPRECATION")
             if (all.isNotEmpty()) mgr.notifyAppWidgetViewDataChanged(all, R.id.busList)
             AllStopsWidget.updateAll(ctx)
+            WidgetRoutes.scheduleNextSwitch(ctx) // Auto widgets switch the minute a range opens or closes
+        }
+
+        /** Short reason shown when a widget has no stop to display. */
+        private fun emptyReason(ctx: Context, widgetId: Int): Pair<String, String> {
+            val routes = Store.routes(ctx)
+            return when {
+                routes.isEmpty() -> "No stops yet" to "Tap to add one"
+                WidgetRoutes.isAuto(ctx, widgetId) -> "No alert times set" to "Tap to set one"
+                else -> "Stop removed" to "Tap to choose"
+            }
         }
 
         fun update(ctx: Context, widgetId: Int) {
@@ -147,7 +158,7 @@ class BusWidget : AppWidgetProvider() {
         }
 
         private fun tapIntent(ctx: Context, widgetId: Int, r: Route?): PendingIntent =
-            if (r == null) PendingIntent.getActivity(
+            if (r == null && !(WidgetRoutes.isAuto(ctx, widgetId) && Store.routes(ctx).isNotEmpty())) PendingIntent.getActivity(
                 ctx, widgetId,
                 Intent(ctx, WidgetConfigActivity::class.java)
                     .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
@@ -187,7 +198,8 @@ class BusWidget : AppWidgetProvider() {
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             if (r == null) {
                 v.setTextViewText(R.id.tBig, "Bus Pup"); v.setTextColor(R.id.tBig, AMBER)
-                v.setTextViewText(R.id.tSmall, "Tap to pick a stop")
+                val (a, b) = emptyReason(ctx, widgetId)
+                v.setTextViewText(R.id.tBig, a); v.setTextViewText(R.id.tSmall, b)
                 return v
             }
             val l = leaveFor(ctx, r, System.currentTimeMillis())
@@ -205,7 +217,8 @@ class BusWidget : AppWidgetProvider() {
             v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             if (r == null) {
                 v.setTextViewText(R.id.mBus, "BUS"); v.setTextViewText(R.id.mBig, "+")
-                v.setTextColor(R.id.mBig, AMBER); v.setTextViewText(R.id.mLabel, "pick stop")
+                v.setTextColor(R.id.mBig, AMBER)
+                v.setTextViewText(R.id.mLabel, if (Store.routes(ctx).isNotEmpty() && WidgetRoutes.isAuto(ctx, widgetId)) "set alert" else "pick stop")
                 return v
             }
             val l = leaveFor(ctx, r, System.currentTimeMillis())
@@ -232,7 +245,8 @@ class BusWidget : AppWidgetProvider() {
                 v.setTextViewText(R.id.sLabel, "")
                 v.setTextViewText(R.id.sBig, "+"); v.setTextColor(R.id.sBig, AMBER)
                 v.setTextViewText(R.id.sBus, "Bus Pup")
-                v.setTextViewText(R.id.sStop, "Tap to pick a stop")
+                val (a, b) = emptyReason(ctx, widgetId)
+                v.setTextViewText(R.id.sBus, a); v.setTextViewText(R.id.sStop, b)
                 return v
             }
             val l = leaveFor(ctx, r, System.currentTimeMillis())
@@ -254,22 +268,7 @@ class BusWidget : AppWidgetProvider() {
             val auto = WidgetRoutes.isAuto(ctx, widgetId)
             val now = System.currentTimeMillis()
 
-            // Tapping a widget with no stop opens the stop picker; otherwise opens the app
-            val tap = if (r == null) {
-                PendingIntent.getActivity(
-                    ctx, widgetId,
-                    Intent(ctx, WidgetConfigActivity::class.java)
-                        .putExtra(AppWidgetManager.EXTRA_APPWIDGET_ID, widgetId)
-                        .setData(android.net.Uri.parse("buscatch://widget/$widgetId")),
-                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                )
-            } else {
-                PendingIntent.getActivity(
-                    ctx, 0, Intent(ctx, MainActivity::class.java),
-                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                )
-            }
-            v.setOnClickPendingIntent(R.id.root, tap)
+            v.setOnClickPendingIntent(R.id.root, tapIntent(ctx, widgetId, r))
             setBell(ctx, v, r)
             v.setOnClickPendingIntent(
                 R.id.refresh,
@@ -284,8 +283,11 @@ class BusWidget : AppWidgetProvider() {
                 v.setTextViewText(R.id.updated, "")
                 v.setTextViewText(
                     R.id.empty,
-                    if (routes.isEmpty()) "No stops yet. Tap to open Bus Pup and add one."
-                    else "This stop was removed. Tap to choose another."
+                    when {
+                        routes.isEmpty() -> "No stops yet. Tap to open Bus Pup and add one."
+                        auto -> "No alert times set. Tap to open Bus Pup and give a stop an alert time."
+                        else -> "This stop was removed. Tap to choose another."
+                    }
                 )
                 v.setViewVisibility(R.id.empty, View.VISIBLE)
                 v.setViewVisibility(R.id.busList, View.GONE)

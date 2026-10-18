@@ -2,6 +2,15 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.14.0
+- Stop widget **Auto** mode follows alert time ranges:
+  - inside a stop's range → that stop (if ranges overlap, the bus you must leave for first)
+  - otherwise → the stop whose range starts next
+  - stops with the alert switched off (🔕) still count; 🔕 only silences the notification
+  - no usable range → "No alert times set"
+- Auto switches the minute a range opens or closes, instead of up to 15 minutes later.
+- Fix: ranges that cross midnight (e.g. 22:00–01:00) now stay open after midnight.
+
 ## 1.13.0
 - **Share Bus Pup** in Settings: sends family and friends the download link and simple install steps through WhatsApp, Telegram, SMS or any app.
 

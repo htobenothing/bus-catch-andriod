@@ -60,7 +60,7 @@ class WidgetConfigActivity : Activity() {
             box.addView(Button(this).apply {
                 isAllCaps = false
                 textSize = 15f
-                text = (if (auto) "✓ " else "") + "⟳ Auto: nearest alert time\nSwitches to whichever stop you'll need next"
+                text = (if (auto) "✓ " else "") + "⟳ Auto: by alert time range\nThe stop whose range you're in, or the next one to start"
                 setOnClickListener { choose(WidgetRoutes.AUTO) }
             }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(14) })
             box.addView(TextView(this).apply {
@@ -76,7 +76,7 @@ class WidgetConfigActivity : Activity() {
                 }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(6) })
             }
             box.addView(TextView(this).apply {
-                text = "Auto shows the stop whose alert window is open now, or the one that opens next. Long-press the widget to change this later."
+                text = "Auto shows the stop whose alert range covers the current time (if two overlap, the bus you must leave for first), otherwise the stop whose range starts next. Stops with the alert switched off still count. Long-press the widget to change this later."
                 textSize = 12f; setTextColor(Color.GRAY); setPadding(0, dp(8), 0, 0)
             })
         }
