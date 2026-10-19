@@ -2,6 +2,11 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.21.0
+- **Pick any days** for a stop's alert range: seven day chips (M T W T F S S) replace the Weekdays / Every day / Weekends menu. E.g. Mon, Wed, Fri for office days.
+- The chips are also on each stop card. Tap a day to switch it on or off right there.
+- Existing stops keep their days.
+
 ## 1.20.0
 - **Send feedback** (Settings → Feedback): write a message, then send it by WhatsApp, Telegram or email through the share sheet, or post it as a GitHub issue. App version and phone model are added. No tokens or extra services.
 - **"Was the alert on time?"** after a trip (once a day): 👍 On time · ⏰ Too early · 🏃 Too late. Answers stay on your phone; too late twice suggests adding 1 min to that stop's buffer, too early twice suggests taking 1 off, with one-tap Apply.

@@ -60,4 +60,29 @@ class AutoModeTest {
         assertFalse(WidgetRoutes.openNow(broken, at("2026-10-16T08:00")))
         assertNull(WidgetRoutes.nextStart(broken, at("2026-10-16T07:00")))
     }
+
+    // ---- day selection ----
+
+    @Test fun olderSavesStillWork() {
+        assertEquals("1111100", Route.maskString(Route.maskOf("weekdays")))
+        assertEquals("0000011", Route.maskString(Route.maskOf("weekends")))
+        assertEquals("1111111", Route.maskString(Route.maskOf("all")))
+    }
+
+    @Test fun pickedDaysOnly() {
+        val monWedFri = stop("mwf", "07:00", "09:00", days = "1010100")
+        assertTrue(WidgetRoutes.openNow(monWedFri, at("2026-10-19T08:00")))   // Monday
+        assertFalse(WidgetRoutes.openNow(monWedFri, at("2026-10-20T08:00")))  // Tuesday
+        assertTrue(WidgetRoutes.openNow(monWedFri, at("2026-10-21T08:00")))   // Wednesday
+        assertEquals(at("2026-10-21T07:00"), WidgetRoutes.nextStart(monWedFri, at("2026-10-19T10:00")))
+    }
+
+    @Test fun dayLabels() {
+        assertEquals("Weekdays", Route.labelOf(Route.maskOf("1111100")))
+        assertEquals("Weekends", Route.labelOf(Route.maskOf("0000011")))
+        assertEquals("Every day", Route.labelOf(Route.maskOf("1111111")))
+        assertEquals("Mon–Thu", Route.labelOf(Route.maskOf("1111000")))
+        assertEquals("Mon, Wed, Fri", Route.labelOf(Route.maskOf("1010100")))
+        assertEquals("Sat", Route.labelOf(Route.maskOf("0000010")))
+    }
 }

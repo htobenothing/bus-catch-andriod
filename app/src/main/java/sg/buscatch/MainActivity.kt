@@ -465,14 +465,51 @@ class MainActivity : Activity() {
         }
         c.addView(row)
         c.addView(TextView(this).apply {
-            text = if (r.alertOn) "🔔 Alert ${r.activeFrom}–${r.activeTo}, ${daysLabel(r.days)}" + (if (Trip.isDone(this@MainActivity, r.id)) " · ✓ on your way" else if (Store.alertedToday(this@MainActivity, r.id)) " · sent today" else "")
+            text = if (r.alertOn) "🔔 Alert ${r.activeFrom}–${r.activeTo}, ${r.daysLabel}" + (if (Trip.isDone(this@MainActivity, r.id)) " · ✓ on your way" else if (Store.alertedToday(this@MainActivity, r.id)) " · sent today" else "")
                    else "🔕 Alert off · tap to edit"
             textSize = 12f; setTextColor(if (r.alertOn) PAPER else DIM); setPadding(0, dp(10), 0, 0)
         })
+        // Tap a day to switch it on or off for this stop, no editor needed
+        val mask = r.dayMask
+        c.addView(dayChips(mask, size = 28) {
+            Store.upsert(this, r.copy(days = Route.maskString(mask)))
+            AlertEngine.rescheduleAsync(this)
+            BusWidget.updateAll(this)
+            ui.post { render() }
+        }, LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(8) })
         return c
     }
 
-    private fun daysLabel(d: String) = when (d) { "weekdays" -> "weekdays"; "weekends" -> "weekends"; else -> "daily" }
+    /**
+     * Seven round day chips, Monday first. [mask] is changed in place; [onToggle] runs after each
+     * tap. The last remaining day can't be switched off.
+     */
+    private fun dayChips(mask: BooleanArray, size: Int = 34, onToggle: () -> Unit = {}): LinearLayout =
+        LinearLayout(this).apply {
+            orientation = LinearLayout.HORIZONTAL
+            val chips = mutableListOf<TextView>()
+            fun paint() = chips.forEachIndexed { i, c ->
+                c.setTextColor(if (mask[i]) (if (pal.puppy) 0xFFFFFFFF.toInt() else BG) else DIM)
+                c.background = GradientDrawable().apply {
+                    shape = GradientDrawable.OVAL
+                    if (mask[i]) setColor(LED) else { setColor(0x00000000); setStroke(dp(1), DIM) }
+                }
+                c.contentDescription = Route.DAY_SHORT[i] + if (mask[i]) ", on" else ", off"
+            }
+            Route.DAY_LETTER.forEachIndexed { i, letter ->
+                val c = TextView(context).apply {
+                    text = letter; gravity = Gravity.CENTER; textSize = 13f
+                    setTypeface(typeface, Typeface.BOLD)
+                    setOnClickListener {
+                        if (mask[i] && mask.count { it } == 1) { toast("Keep at least one day"); return@setOnClickListener }
+                        mask[i] = !mask[i]; paint(); onToggle()
+                    }
+                }
+                chips += c
+                addView(c, LinearLayout.LayoutParams(dp(size), dp(size)).apply { marginEnd = dp(6) })
+            }
+            paint()
+        }
 
     // ---------- Widgets tab (static help) ----------
 
@@ -877,14 +914,11 @@ class MainActivity : Activity() {
         val to = field("09:00", existing?.activeTo ?: "09:00", InputType.TYPE_CLASS_DATETIME or InputType.TYPE_DATETIME_VARIATION_TIME)
         form.addView(pair(label("Alert from (24h)"), from, label("Alert until"), to))
 
-        form.addView(label("Days"))
-        val dayKeys = listOf("weekdays", "all", "weekends")
-        val days = Spinner(this).apply {
-            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item,
-                listOf("Weekdays (Mon–Fri)", "Every day", "Weekends"))
-            setSelection(dayKeys.indexOf(existing?.days ?: "weekdays").coerceAtLeast(0))
-        }
-        form.addView(days)
+        val dayMask = Route.maskOf(existing?.days ?: Route.WEEKDAYS)
+        val daysTitle = label("Days · ${Route.labelOf(dayMask)}")
+        form.addView(daysTitle)
+        form.addView(dayChips(dayMask) { daysTitle.text = "Days · ${Route.labelOf(dayMask)}" },
+            LinearLayout.LayoutParams(-2, -2).apply { topMargin = dp(6) })
 
         val alert = Switch(this).apply {
             text = "Leave-home alert"; isChecked = existing?.alertOn ?: true
@@ -916,7 +950,7 @@ class MainActivity : Activity() {
                             walkMin = walk.text.toString().toIntOrNull()?.coerceIn(0, 60) ?: 5,
                             bufferMin = buf.text.toString().toIntOrNull()?.coerceIn(0, 30) ?: 1,
                             activeFrom = fmtTime(f), activeTo = fmtTime(t),
-                            days = dayKeys[days.selectedItemPosition], alertOn = alert.isChecked,
+                            days = Route.maskString(dayMask), alertOn = alert.isChecked,
                         )
                         Store.upsert(this, r)
                         AlertEngine.rescheduleAsync(this, fetch = true)

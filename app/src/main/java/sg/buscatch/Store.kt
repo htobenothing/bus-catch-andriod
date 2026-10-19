@@ -16,7 +16,7 @@ data class Route(
     val bufferMin: Int,
     val activeFrom: String,   // "HH:mm" — alerts only fire inside this window
     val activeTo: String,
-    val days: String,         // "all" | "weekdays" | "weekends"
+    val days: String,         // 7 chars Mon..Sun, e.g. "1111100"; older saves used "all" | "weekdays" | "weekends"
     val alertOn: Boolean,
 ) {
     val needMin get() = walkMin + bufferMin
@@ -24,14 +24,13 @@ data class Route(
     val serviceLabel: String get() = services.joinToString(" / ")
     val displayName get() = label.ifBlank { "Stop $stopCode" }
 
-    fun dayOk(date: LocalDate = LocalDate.now()): Boolean {
-        val dow = date.dayOfWeek.value // 1 = Mon … 7 = Sun
-        return when (days) {
-            "weekdays" -> dow <= 5
-            "weekends" -> dow >= 6
-            else -> true
-        }
-    }
+    /** Which days the alert range runs, Monday first. */
+    val dayMask: BooleanArray get() = maskOf(days)
+
+    fun dayOk(date: LocalDate = LocalDate.now()): Boolean = dayMask[date.dayOfWeek.value - 1]
+
+    /** "Weekdays", "Every day", "Weekends", "Mon–Thu", "Mon, Wed, Fri"… */
+    val daysLabel: String get() = labelOf(dayMask)
 
     /** True when [t] falls in the alert window, optionally widened by [leadMin] before it starts. */
     fun inWindow(t: LocalTime = LocalTime.now(), leadMin: Long = 0): Boolean {
@@ -62,12 +61,36 @@ data class Route(
             bufferMin = o.optInt("bufferMin", 1),
             activeFrom = o.optString("activeFrom", "07:00"),
             activeTo = o.optString("activeTo", "09:00"),
-            days = o.optString("days", "weekdays"),
+            days = maskString(maskOf(o.optString("days", WEEKDAYS))), // older saves become a day mask
             alertOn = o.optBoolean("alertOn", true),
         )
 
         fun splitServices(s: String): List<String> =
             s.split(Regex("[,/\\s]+")).map { it.trim().uppercase() }.filter { it.isNotEmpty() }.distinct()
+
+        val DAY_SHORT = listOf("Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun")
+        val DAY_LETTER = listOf("M", "T", "W", "T", "F", "S", "S")
+        const val WEEKDAYS = "1111100"
+
+        fun maskOf(days: String): BooleanArray {
+            val m = when (days) { "weekdays" -> WEEKDAYS; "weekends" -> "0000011"; "all" -> "1111111"; else -> days }
+            return BooleanArray(7) { m.getOrNull(it) == '1' }
+        }
+
+        fun maskString(m: BooleanArray) = m.joinToString("") { if (it) "1" else "0" }
+
+        fun labelOf(m: BooleanArray): String {
+            val on = (0..6).filter { m[it] }
+            return when {
+                on.size == 7 -> "Every day"
+                on.isEmpty() -> "No days"
+                on == (0..4).toList() -> "Weekdays"
+                on == listOf(5, 6) -> "Weekends"
+                // one unbroken run of 3+ days: "Mon–Thu"
+                on.size >= 3 && on.last() - on.first() == on.size - 1 -> "${DAY_SHORT[on.first()]}–${DAY_SHORT[on.last()]}"
+                else -> on.joinToString(", ") { DAY_SHORT[it] }
+            }
+        }
 
         fun parseTime(s: String): LocalTime? = try {
             val p = s.trim().split(":")
