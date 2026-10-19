@@ -1,5 +1,6 @@
 package sg.buscatch
 
+import android.app.Activity
 import android.app.Application
 import android.app.Notification
 import android.app.NotificationChannel
@@ -8,84 +9,43 @@ import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
+import android.net.Uri
 import android.os.Build
-import org.json.JSONArray
-import org.json.JSONObject
 import java.io.PrintWriter
 import java.io.StringWriter
-import java.net.HttpURLConnection
-import java.net.URL
 import java.time.LocalDate
-import java.util.UUID
 
 /**
- * Feedback goes to this app's GitHub repo as issues, so it all lands in one place you already use.
- * The token (repo secret FEEDBACK_TOKEN) is added at build time and can only create issues
- * and comments in this one repo. Anything that can't be sent right away is queued and retried.
+ * Feedback without tokens or extra services:
+ *  - messages and crash reports go out through the phone's share sheet (WhatsApp, Telegram, email…),
+ *    or as a pre-filled GitHub issue page for people with a GitHub account
+ *  - "was the alert on time?" answers stay on the phone and suggest walk/buffer tweaks
  */
 object Feedback {
-    private const val REPO = "htobenothing/bus-catch-andriod"
-    private const val RATINGS_ISSUE = 1
+    private const val REPO_URL = "https://github.com/htobenothing/bus-catch-andriod"
     private fun prefs(ctx: Context) = ctx.getSharedPreferences("buscatch_feedback", Context.MODE_PRIVATE)
-
-    val enabled get() = BuildConfig.FEEDBACK_TOKEN.isNotBlank()
-
-    /** Short anonymous id so you can tell reports from the same phone apart. No personal data. */
-    private fun installId(ctx: Context): String = prefs(ctx).getString("id", null)
-        ?: UUID.randomUUID().toString().take(6).also { prefs(ctx).edit().putString("id", it).apply() }
 
     fun deviceLine(ctx: Context) =
         "Bus Pup v${BuildConfig.VERSION_NAME} · ${Build.MANUFACTURER} ${Build.MODEL} · Android ${Build.VERSION.RELEASE} · " +
-            "${if (Theme.of(ctx).puppy) "Puppy" else "Classic"} theme · id ${installId(ctx)}"
+            "${if (Theme.of(ctx).puppy) "Puppy" else "Classic"} theme"
 
-    // ---------- sending (blocking; call off the main thread) ----------
-
-    /** New issue. Returns true if sent, false if queued for later. */
-    fun sendIssue(ctx: Context, title: String, body: String, labels: List<String>): Boolean {
-        val json = JSONObject().put("title", title).put("body", body).put("labels", JSONArray(labels + "from-app"))
-        return post(ctx, "https://api.github.com/repos/$REPO/issues", json)
+    /** Open the share sheet so the person picks who to send it to. */
+    fun share(activity: Activity, subject: String, text: String) {
+        activity.startActivity(Intent.createChooser(
+            Intent(Intent.ACTION_SEND).setType("text/plain")
+                .putExtra(Intent.EXTRA_SUBJECT, subject)
+                .putExtra(Intent.EXTRA_TEXT, text),
+            "Send feedback with…"
+        ))
     }
 
-    /** One alert-timing answer, as a comment on the ratings issue. */
-    fun sendRating(ctx: Context, text: String): Boolean =
-        post(ctx, "https://api.github.com/repos/$REPO/issues/$RATINGS_ISSUE/comments", JSONObject().put("body", text))
-
-    private fun post(ctx: Context, url: String, json: JSONObject): Boolean {
-        if (!enabled) return false
-        val ok = try {
-            val c = URL(url).openConnection() as HttpURLConnection
-            c.requestMethod = "POST"; c.doOutput = true
-            c.connectTimeout = 10_000; c.readTimeout = 15_000
-            c.setRequestProperty("Authorization", "Bearer ${BuildConfig.FEEDBACK_TOKEN}")
-            c.setRequestProperty("Accept", "application/vnd.github+json")
-            c.setRequestProperty("User-Agent", "BusPup-Android")
-            c.setRequestProperty("Content-Type", "application/json")
-            try {
-                c.outputStream.use { it.write(json.toString().toByteArray()) }
-                c.responseCode in 200..299
-            } finally { c.disconnect() }
-        } catch (e: Exception) { false }
-        if (!ok) queue(ctx, url, json)
-        return ok
+    /** Open a pre-filled "new issue" page on GitHub (needs a GitHub account to submit). */
+    fun openGitHubIssue(activity: Activity, title: String, body: String, label: String) {
+        val url = "$REPO_URL/issues/new?title=${Uri.encode(title)}&body=${Uri.encode(body)}&labels=${Uri.encode(label)}"
+        try { activity.startActivity(Intent(Intent.ACTION_VIEW, Uri.parse(url))) } catch (e: Exception) { }
     }
 
-    private fun queue(ctx: Context, url: String, json: JSONObject) {
-        val arr = JSONArray(prefs(ctx).getString("queue", "[]"))
-        if (arr.length() >= 20) return // don't pile up forever
-        arr.put(JSONObject().put("url", url).put("json", json))
-        prefs(ctx).edit().putString("queue", arr.toString()).apply()
-    }
-
-    /** Retry anything that couldn't be sent earlier. */
-    fun flush(ctx: Context) {
-        if (!enabled) return
-        val arr = JSONArray(prefs(ctx).getString("queue", "[]"))
-        if (arr.length() == 0) return
-        prefs(ctx).edit().putString("queue", "[]").apply()
-        for (i in 0 until arr.length()) arr.getJSONObject(i).let { post(ctx, it.getString("url"), it.getJSONObject("json")) }
-    }
-
-    // ---------- "Was the alert on time?" ----------
+    // ---------- "Was the alert on time?" (stays on the phone) ----------
 
     private const val CHANNEL = "ask"
     private const val ASK_ID = 6060
@@ -93,16 +53,16 @@ object Feedback {
     const val EXTRA_ANSWER = "answer"
     const val EXTRA_ROUTE = "route"
 
-    /** After a trip finishes, ask once a day how the timing was (only if feedback is set up). */
+    /** After a trip finishes, ask once a day how the timing was. */
     fun askAboutTrip(ctx: Context, routeId: String) {
-        if (!enabled || !Notifier.canNotify(ctx)) return
+        if (!Notifier.canNotify(ctx)) return
         val today = LocalDate.now().toString()
         if (prefs(ctx).getString("asked", null) == today) return
         prefs(ctx).edit().putString("asked", today).apply()
         val nm = ctx.getSystemService(NotificationManager::class.java) ?: return
         if (nm.getNotificationChannel(CHANNEL) == null) {
             nm.createNotificationChannel(NotificationChannel(CHANNEL, "Quick questions", NotificationManager.IMPORTANCE_LOW).apply {
-                description = "Occasional one-tap questions to make the alerts better"
+                description = "Occasional one-tap questions that help tune your leave times"
             })
         }
         fun answer(code: String, label: String, req: Int) = Notification.Action.Builder(null, label,
@@ -112,7 +72,7 @@ object Feedback {
         nm.notify(ASK_ID, Notification.Builder(ctx, CHANNEL)
             .setSmallIcon(R.drawable.ic_bus)
             .setContentTitle((if (Theme.of(ctx).puppy) "🐶 " else "") + "Was the alert on time?")
-            .setContentText("One tap helps tune your leave times.")
+            .setContentText("One tap helps tune your leave time.")
             .addAction(answer("ontime", "👍 On time", 6061))
             .addAction(answer("early", "⏰ Too early", 6062))
             .addAction(answer("late", "🏃 Too late", 6063))
@@ -123,15 +83,40 @@ object Feedback {
 
     fun dismissAsk(ctx: Context) { ctx.getSystemService(NotificationManager::class.java)?.cancel(ASK_ID) }
 
+    /** Keep the last 3 answers per stop. */
+    fun recordAnswer(ctx: Context, routeId: String, answer: String) {
+        val p = prefs(ctx)
+        val last = (p.getString("answers_$routeId", "") ?: "").split(",").filter { it.isNotBlank() }
+        p.edit().putString("answers_$routeId", (last + answer).takeLast(3).joinToString(",")).apply()
+    }
+
+    data class Tweak(val route: Route, val delta: Int, val reason: String)
+
+    /** "Too late" twice in the last 3 → suggest +1 min buffer; "too early" twice → suggest −1. */
+    fun suggestion(ctx: Context): Tweak? {
+        for (r in Store.routes(ctx)) {
+            val last = (prefs(ctx).getString("answers_${r.id}", "") ?: "").split(",")
+            if (last.count { it == "late" } >= 2) return Tweak(r, +1, "You were too late twice recently")
+            if (last.count { it == "early" } >= 2 && r.bufferMin > 0) return Tweak(r, -1, "You were too early twice recently")
+        }
+        return null
+    }
+
+    /** Apply or dismiss a suggestion; either way, start counting fresh for that stop. */
+    fun resolve(ctx: Context, t: Tweak, apply: Boolean) {
+        if (apply) Store.upsert(ctx, t.route.copy(bufferMin = (t.route.bufferMin + t.delta).coerceIn(0, 30)))
+        prefs(ctx).edit().remove("answers_${t.route.id}").apply()
+    }
+
     // ---------- crash reports ----------
 
-    /** Save any crash so the app can offer to send it next time it opens. */
+    /** Save any crash so the app can offer to share it next time it opens. */
     fun installCrashCatcher(app: Application) {
         val previous = Thread.getDefaultUncaughtExceptionHandler()
         Thread.setDefaultUncaughtExceptionHandler { t, e ->
             try {
                 val sw = StringWriter(); e.printStackTrace(PrintWriter(sw))
-                prefs(app).edit().putString("crash", "Thread: ${t.name}\n\n${sw.toString().take(6000)}").commit()
+                prefs(app).edit().putString("crash", "Thread: ${t.name}\n\n${sw.toString().take(4000)}").commit()
             } catch (x: Exception) { }
             previous?.uncaughtException(t, e)
         }
@@ -141,21 +126,15 @@ object Feedback {
     fun clearCrash(ctx: Context) { prefs(ctx).edit().remove("crash").apply() }
 }
 
-/** Handles the 👍 / ⏰ / 🏃 taps. */
+/** Handles the 👍 / ⏰ / 🏃 taps. Answers stay on the phone. */
 class RatingReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         Feedback.dismissAsk(ctx)
         val answer = intent.getStringExtra(Feedback.EXTRA_ANSWER) ?: return
-        val r = Store.routes(ctx).firstOrNull { it.id == intent.getStringExtra(Feedback.EXTRA_ROUTE) }
-        val face = when (answer) { "ontime" -> "👍 On time"; "early" -> "⏰ Too early"; else -> "🏃 Too late" }
-        val text = buildString {
-            append("**$face**")
-            if (r != null) append(" · bus ${r.serviceLabel} · walk ${r.walkMin} + buffer ${r.bufferMin} min")
-            append("\n\n<sub>${Feedback.deviceLine(ctx)}</sub>")
-        }
-        android.widget.Toast.makeText(ctx, "Thanks! 🐾", android.widget.Toast.LENGTH_SHORT).show()
-        val pending = goAsync()
-        Thread { try { Feedback.sendRating(ctx, text) } finally { pending.finish() } }.start()
+        val routeId = intent.getStringExtra(Feedback.EXTRA_ROUTE) ?: return
+        Feedback.recordAnswer(ctx, routeId, answer)
+        val msg = if (Feedback.suggestion(ctx) != null) "Thanks! Open Bus Pup for a timing tip 🐾" else "Thanks! 🐾"
+        android.widget.Toast.makeText(ctx, msg, android.widget.Toast.LENGTH_SHORT).show()
     }
 }
 

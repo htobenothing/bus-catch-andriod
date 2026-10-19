@@ -60,7 +60,6 @@ jobs:
       - name: Build release APK
         env:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
-          FEEDBACK_TOKEN: ${{ secrets.FEEDBACK_TOKEN }}
         run: gradle :app:assembleRelease --no-daemon
 
       - name: Rename

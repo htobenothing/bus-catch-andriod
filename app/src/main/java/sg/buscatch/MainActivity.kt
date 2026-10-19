@@ -208,7 +208,6 @@ class MainActivity : Activity() {
         super.onResume()
         AlertEngine.rescheduleAsync(this) // keep the alert chain alive
         offerCrashReport()
-        io.execute { Feedback.flush(this) }
         // Back from "allow installs from this app": continue the update
         pendingApk?.let { apk ->
             if (Build.VERSION.SDK_INT < 26 || packageManager.canRequestPackageInstalls()) {
@@ -262,6 +261,33 @@ class MainActivity : Activity() {
 
         // Slim notices that lead to Settings
         notices.removeAllViews()
+        Feedback.suggestion(this)?.let { t ->
+            notices.addView(LinearLayout(this).apply {
+                orientation = LinearLayout.VERTICAL
+                setPadding(dp(14), dp(10), dp(14), dp(10))
+                background = rounded(pal.notice)
+                addView(TextView(context).apply {
+                    text = "⏱ ${t.reason} at ${t.route.displayName}. " +
+                        (if (t.delta > 0) "Add 1 min to the buffer?" else "Take 1 min off the buffer?")
+                    textSize = 13f; setTextColor(PAPER)
+                })
+                addView(LinearLayout(context).apply {
+                    orientation = LinearLayout.HORIZONTAL; gravity = Gravity.END
+                    addView(Button(context).apply {
+                        text = "No thanks"; isAllCaps = false
+                        setOnClickListener { Feedback.resolve(this@MainActivity, t, false); render() }
+                    })
+                    addView(Button(context).apply {
+                        text = "Apply"; isAllCaps = false
+                        setOnClickListener {
+                            Feedback.resolve(this@MainActivity, t, true)
+                            AlertEngine.rescheduleAsync(this@MainActivity)
+                            toast("Buffer is now ${(t.route.bufferMin + t.delta).coerceIn(0, 30)} min"); render()
+                        }
+                    })
+                })
+            }, LinearLayout.LayoutParams(-1, -2).apply { bottomMargin = dp(10) })
+        }
         Updater.known(this)?.let { notice("⬆  Version ${it.version} is ready · tap to update", GREEN) }
         if (needsNotifications() || needsExactAlarms()) notice("⚠  Alerts need a permission · tap to fix", LED)
 
@@ -633,12 +659,12 @@ class MainActivity : Activity() {
 
         box.addView(sectionTitle("Feedback"))
         box.addView(panel(
-            para("Found a problem or have an idea? Send it straight to the Bus Pup team."),
+            para("Found a problem or have an idea? Send it by WhatsApp, Telegram or email, or post it on GitHub."),
             Button(this).apply {
                 text = "💬 Send feedback"; isAllCaps = false
                 setOnClickListener { feedbackDialog() }
             },
-            para("Feedback is posted on Bus Pup's public GitHub page, so please don't include private details.", DIM, 12f),
+            para("Your app version and phone model are added so problems are easier to fix.", DIM, 12f),
         ))
 
         box.addView(sectionTitle("Share"))
@@ -684,7 +710,6 @@ class MainActivity : Activity() {
     }
 
     private fun feedbackDialog() {
-        if (!Feedback.enabled) { toast("Feedback isn't set up in this version yet."); return }
         val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
         val kinds = listOf("🐞 Something's wrong" to "bug", "💡 Idea" to "idea", "💬 Other" to "feedback")
         val kind = Spinner(this).apply {
@@ -721,10 +746,13 @@ class MainActivity : Activity() {
                 val title = label.substringAfter(" ") + ": " + text.lineSequence().first().take(60)
                 val body = text + "\n\n---\n" + (if (name.isNotEmpty()) "From: $name\n" else "") + Feedback.deviceLine(this)
                 dlg.dismiss()
-                io.execute {
-                    val sent = Feedback.sendIssue(this, title, body, listOf("feedback", tag))
-                    ui.post { toast(if (sent) "Thanks! Sent 🐾" else "Saved. It'll send when you're back online.") }
-                }
+                AlertDialog.Builder(this)
+                    .setTitle("Send it with…")
+                    .setItems(arrayOf("💬 WhatsApp, Telegram, email…", "🐙 GitHub (needs a GitHub account)")) { _, which ->
+                        if (which == 0) Feedback.share(this, "Bus Pup feedback: $title", "Bus Pup feedback · $label\n\n$body")
+                        else Feedback.openGitHubIssue(this, title, body, tag)
+                    }
+                    .show()
             }
         }
         dlg.show()
@@ -734,17 +762,11 @@ class MainActivity : Activity() {
     private fun offerCrashReport() {
         val crash = Feedback.pendingCrash(this) ?: return
         Feedback.clearCrash(this) // ask once
-        if (!Feedback.enabled) return
         AlertDialog.Builder(this)
             .setTitle("Bus Pup closed unexpectedly")
-            .setMessage("Send a report so it can be fixed? It includes technical details, your app version and phone model, but no stops or personal info.")
-            .setPositiveButton("Send report") { _, _ ->
-                io.execute {
-                    val first = crash.lineSequence().drop(2).firstOrNull().orEmpty().take(80)
-                    Feedback.sendIssue(this, "Crash: $first",
-                        "```\n$crash\n```\n\n${Feedback.deviceLine(this)}", listOf("crash", "bug"))
-                }
-                toast("Thanks! Report sent.")
+            .setMessage("Share the details so it can be fixed? They include technical details, your app version and phone model, but no stops or personal info.")
+            .setPositiveButton("Share details") { _, _ ->
+                Feedback.share(this, "Bus Pup crash report", "Bus Pup closed unexpectedly.\n\n${Feedback.deviceLine(this)}\n\n$crash")
             }
             .setNegativeButton("Not now", null)
             .show()

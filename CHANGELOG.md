@@ -2,11 +2,13 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.20.0
+- **Send feedback** (Settings → Feedback): write a message, then send it by WhatsApp, Telegram or email through the share sheet, or post it as a GitHub issue. App version and phone model are added. No tokens or extra services.
+- **"Was the alert on time?"** after a trip (once a day): 👍 On time · ⏰ Too early · 🏃 Too late. Answers stay on your phone; too late twice suggests adding 1 min to that stop's buffer, too early twice suggests taking 1 off, with one-tap Apply.
+- **Crash reports**: if Bus Pup closes unexpectedly, it offers to share the details next time you open it.
+
 ## 1.19.0
-- **Send feedback** (Settings → Feedback): report a problem or share an idea from inside the app. Your app version and phone model are added automatically. Feedback is posted on Bus Pup's GitHub page.
-- **"Was the alert on time?"**: after a trip, one tap (👍 On time · ⏰ Too early · 🏃 Too late) helps tune leave times. Asked at most once a day.
-- **Crash reports**: if Bus Pup closes unexpectedly, it offers to send a report next time you open it.
-- Feedback sent while offline is saved and sent later.
+- Built-in feedback groundwork (replaced in 1.20.0).
 
 ## 1.18.0
 - **Goes quiet once you're on your way.** Tapping **I'm going** on the alarm, or the new **✓ I'm on the bus** button on the Live notification, finishes that stop's trip: no more alarms, Live updates or "Leave now" for it until its range ends. ✓ I'm on the bus also earns the puppy a treat.
