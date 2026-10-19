@@ -63,6 +63,18 @@ class LiveService : Service() {
             Store.setLivePausedUntil(this, openRangesEnd(this) ?: System.currentTimeMillis())
             stopSelf(); return START_NOT_STICKY
         }
+        if (intent?.action == ACTION_ONBOARD) {
+            // "I'm on the bus": this stop's trip is done; treat for the puppy; go quiet
+            val id = intent.getStringExtra(EXTRA_ROUTE)
+            Rewards.onGoing(this, id)?.let { android.widget.Toast.makeText(this, it, android.widget.Toast.LENGTH_LONG).show() }
+            Trip.finish(this, id)
+            Notifier.dismiss(this, id?.hashCode() ?: 0)
+            AlertEngine.rescheduleAsync(this)
+            BusWidget.updateAll(this)
+            if (liveRoutes(this).isEmpty()) { stopSelf(); return START_NOT_STICKY }
+            if (looping) { worker.removeCallbacks(loop); worker.post(loop) }
+            return START_NOT_STICKY
+        }
         val n = notification(this, "Live bus times", "Starting…")
         if (Build.VERSION.SDK_INT >= 29) startForeground(NOTIF_ID, n, ServiceInfo.FOREGROUND_SERVICE_TYPE_DATA_SYNC)
         else startForeground(NOTIF_ID, n)
@@ -95,12 +107,21 @@ class LiveService : Service() {
             BusWidget.updateAll(this)
             AlertEngine.tick(this, fetch = false) // keep the leave alarm on the latest times
         }
-        val (title, body) = summary(open)
-        getSystemService(NotificationManager::class.java)?.notify(NOTIF_ID, notification(this, title, body))
+        Trip.autoFinish(this)
+        val still = liveRoutes(this)
+        if (still.isEmpty()) return false
+        val (title, body, routeId) = summary(still)
+        val key = "$title|$body|$routeId"
+        if (key != lastShown) {
+            lastShown = key
+            getSystemService(NotificationManager::class.java)?.notify(NOTIF_ID, notification(this, title, body, routeId))
+        }
         return true
     }
 
-    private fun summary(open: List<Route>): Pair<String, String> {
+    private var lastShown = ""
+
+    private fun summary(open: List<Route>): Triple<String, String, String> {
         val now = System.currentTimeMillis()
         val r = WidgetRoutes.nearest(this, open) ?: open.first()
         val plan = Planner.plan(r, Store.cachedStop(this, r.stopCode), now)
@@ -117,7 +138,7 @@ class LiveService : Service() {
             leave <= now + 60_000 -> "Leave NOW · ${plan.target?.service} at ${hm.format(Date(plan.target!!.timeMs))}"
             else -> "Leave at ${hm.format(Date(leave))} · ${plan.target?.service}"
         }
-        return title to (if (next.isNotEmpty()) "${r.displayName} · $next" else r.displayName)
+        return Triple(title, if (next.isNotEmpty()) "${r.displayName} · $next" else r.displayName, r.id)
     }
 
     companion object {
@@ -126,12 +147,14 @@ class LiveService : Service() {
         const val NOTIF_ID = 5050
         private const val CHANNEL = "live"
         private const val ACTION_PAUSE = "sg.buscatch.LIVE_PAUSE"
+        private const val ACTION_ONBOARD = "sg.buscatch.LIVE_ONBOARD"
+        private const val EXTRA_ROUTE = "route"
 
         /** Stops whose alert range is open now (alert on or off, like Auto mode). */
         fun liveRoutes(ctx: Context): List<Route> {
             if (!Store.liveEnabled(ctx) || System.currentTimeMillis() < Store.livePausedUntil(ctx)) return emptyList()
             val now = LocalDateTime.now()
-            return Store.routes(ctx).filter { WidgetRoutes.openNow(it, now) }
+            return Store.routes(ctx).filter { WidgetRoutes.openNow(it, now) && !Trip.isDone(ctx, it.id) }
         }
 
         private fun openRangesEnd(ctx: Context): Long? {
@@ -153,7 +176,7 @@ class LiveService : Service() {
 
         fun stop(ctx: Context) { ctx.stopService(Intent(ctx, LiveService::class.java)) }
 
-        private fun notification(ctx: Context, title: String, body: String): Notification {
+        private fun notification(ctx: Context, title: String, body: String, routeId: String? = null): Notification {
             val nm = ctx.getSystemService(NotificationManager::class.java)
             if (nm?.getNotificationChannel(CHANNEL) == null) {
                 nm?.createNotificationChannel(NotificationChannel(CHANNEL, "Live bus times", NotificationManager.IMPORTANCE_LOW).apply {
@@ -165,6 +188,9 @@ class LiveService : Service() {
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             val pause = PendingIntent.getService(ctx, 5052, Intent(ctx, LiveService::class.java).setAction(ACTION_PAUSE),
                 PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
+            val onboard = PendingIntent.getService(ctx, 5053,
+                Intent(ctx, LiveService::class.java).setAction(ACTION_ONBOARD).putExtra(EXTRA_ROUTE, routeId),
+                PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT)
             return Notification.Builder(ctx, CHANNEL)
                 .setSmallIcon(R.drawable.ic_bus)
                 .setContentTitle(title)
@@ -173,7 +199,8 @@ class LiveService : Service() {
                 .setOngoing(true)
                 .setOnlyAlertOnce(true)
                 .setCategory(Notification.CATEGORY_STATUS)
-                .addAction(Notification.Action.Builder(null, "Pause until range ends", pause).build())
+                .apply { if (routeId != null) addAction(Notification.Action.Builder(null, "✓ I'm on the bus", onboard).build()) }
+                .addAction(Notification.Action.Builder(null, "Pause", pause).build())
                 .build()
         }
     }

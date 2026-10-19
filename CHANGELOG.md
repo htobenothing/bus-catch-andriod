@@ -2,6 +2,12 @@
 
 All notable changes to Bus Pup (formerly Bus Catch). Versions follow [Semantic Versioning](https://semver.org).
 
+## 1.18.0
+- **Goes quiet once you're on your way.** Tapping **I'm going** on the alarm, or the new **✓ I'm on the bus** button on the Live notification, finishes that stop's trip: no more alarms, Live updates or "Leave now" for it until its range ends. ✓ I'm on the bus also earns the puppy a treat.
+- **Auto-finish**: if you don't tap anything, the trip finishes 3 minutes after the bus you were alerted for arrives.
+- After a trip finishes, Auto widgets and the Quick Settings tile move on to your next range, and the stop card shows "✓ on your way". Edit and save the stop to re-arm it.
+- The Live notification only updates when its content changes, so it no longer keeps popping up.
+
 ## 1.17.0
 - **Find a stop by name or near you**: when adding a stop, tap 🔎 to search (e.g. "Jurong Point") or tap 📍 Stops near me. No need to know the 5-digit code.
 - **Quick Settings tile**: add Bus Pup to your quick settings to see when to leave, and tap it for the next buses without unlocking.

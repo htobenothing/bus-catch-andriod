@@ -39,7 +39,8 @@ object WidgetRoutes {
         val ranged = routes.filter { range(it) != null }
         if (ranged.isEmpty()) return null
 
-        val open = ranged.filter { openNow(it, now) }
+        // A finished trip (you're on your way) no longer counts as open
+        val open = ranged.filter { openNow(it, now) && !Trip.isDone(ctx, it.id) }
         if (open.isNotEmpty()) {
             val nowMs = System.currentTimeMillis()
             // Overlap: the stop you must leave for first; ties (or no live data) keep list order

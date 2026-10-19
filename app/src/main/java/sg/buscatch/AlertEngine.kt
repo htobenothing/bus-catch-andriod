@@ -41,7 +41,10 @@ object AlertEngine {
         val routes = Store.routes(ctx)
         val now = System.currentTimeMillis()
         val nowLdt = LocalDateTime.now()
-        val active = routes.filter { it.alertOn && WidgetRoutes.openNow(it, nowLdt) && !Store.alertedToday(ctx, it.id) }
+        Trip.autoFinish(ctx)
+        val active = routes.filter {
+            it.alertOn && WidgetRoutes.openNow(it, nowLdt) && !Store.alertedToday(ctx, it.id) && !Trip.isDone(ctx, it.id)
+        }
 
         if (fetch && active.isNotEmpty()) {
             var ok = true

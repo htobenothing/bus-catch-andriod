@@ -69,6 +69,7 @@ object Notifier {
         }
         val title = (if (Theme.of(ctx).puppy) "🐶 Woof! " else "") + "Leave now for bus $busNo"
         Rewards.onAlert(ctx)
+        Trip.alertedFor(ctx, r.id, busMs)
         alarm(ctx, r.id.hashCode(), title, body, r.id)
     }
 
@@ -121,6 +122,8 @@ class DismissReceiver : BroadcastReceiver() {
     override fun onReceive(ctx: Context, intent: Intent) {
         Notifier.dismiss(ctx, intent.getIntExtra(Notifier.EXTRA_ID, 0))
         if (intent.action == Notifier.ACTION_GOING) {
+            Trip.finish(ctx, intent.getStringExtra(Notifier.EXTRA_ROUTE_ID)) // on your way: go quiet for this range
+            AlertEngine.rescheduleAsync(ctx)
             Rewards.onGoing(ctx, intent.getStringExtra(Notifier.EXTRA_ROUTE_ID))?.let {
                 android.widget.Toast.makeText(ctx, it, android.widget.Toast.LENGTH_LONG).show()
             }

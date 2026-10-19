@@ -437,7 +437,7 @@ class MainActivity : Activity() {
         }
         c.addView(row)
         c.addView(TextView(this).apply {
-            text = if (r.alertOn) "🔔 Alert ${r.activeFrom}–${r.activeTo}, ${daysLabel(r.days)}" + (if (Store.alertedToday(this@MainActivity, r.id)) " · sent today" else "")
+            text = if (r.alertOn) "🔔 Alert ${r.activeFrom}–${r.activeTo}, ${daysLabel(r.days)}" + (if (Trip.isDone(this@MainActivity, r.id)) " · ✓ on your way" else if (Store.alertedToday(this@MainActivity, r.id)) " · sent today" else "")
                    else "🔕 Alert off · tap to edit"
             textSize = 12f; setTextColor(if (r.alertOn) PAPER else DIM); setPadding(0, dp(10), 0, 0)
         })
@@ -821,6 +821,7 @@ class MainActivity : Activity() {
                         AlertEngine.rescheduleAsync(this, fetch = true)
                         // Changing a route's settings re-arms today's alert
                         Store.clearAlerted(this, r.id)
+                        Trip.reopen(this, r.id) // saving a stop re-arms it
                         RefreshWorker.refreshSoon(this)
                         fetchAll(); render()
                         dlg.dismiss()

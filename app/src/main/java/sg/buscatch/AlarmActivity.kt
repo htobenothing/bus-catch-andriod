@@ -68,6 +68,8 @@ class AlarmActivity : Activity() {
 
     /** "I'm going": stop the alarm and give the puppy its treat. */
     private fun going() {
+        Trip.finish(this, intent.getStringExtra(Notifier.EXTRA_ROUTE_ID)) // on your way: go quiet for this range
+        AlertEngine.rescheduleAsync(this)
         Rewards.onGoing(this, intent.getStringExtra(Notifier.EXTRA_ROUTE_ID))?.let {
             android.widget.Toast.makeText(this, it, android.widget.Toast.LENGTH_LONG).show()
         }
