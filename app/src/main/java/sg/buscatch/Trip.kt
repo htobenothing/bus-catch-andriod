@@ -23,6 +23,7 @@ object Trip {
         val ms = end.atZone(ZoneId.systemDefault()).toInstant().toEpochMilli()
         prefs(ctx).edit().putLong("done_until_$routeId", ms).apply()
         Store.markAlerted(ctx, routeId) // no alarm later in this range either
+        Feedback.askAboutTrip(ctx, routeId) // one-tap "was the alert on time?"
     }
 
     /** Undo, e.g. if you missed the bus after all. */

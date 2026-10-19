@@ -207,6 +207,8 @@ class MainActivity : Activity() {
     override fun onResume() {
         super.onResume()
         AlertEngine.rescheduleAsync(this) // keep the alert chain alive
+        offerCrashReport()
+        io.execute { Feedback.flush(this) }
         // Back from "allow installs from this app": continue the update
         pendingApk?.let { apk ->
             if (Build.VERSION.SDK_INT < 26 || packageManager.canRequestPackageInstalls()) {
@@ -629,6 +631,16 @@ class MainActivity : Activity() {
         }
         box.addView(upd)
 
+        box.addView(sectionTitle("Feedback"))
+        box.addView(panel(
+            para("Found a problem or have an idea? Send it straight to the Bus Pup team."),
+            Button(this).apply {
+                text = "💬 Send feedback"; isAllCaps = false
+                setOnClickListener { feedbackDialog() }
+            },
+            para("Feedback is posted on Bus Pup's public GitHub page, so please don't include private details.", DIM, 12f),
+        ))
+
         box.addView(sectionTitle("Share"))
         box.addView(panel(
             para("Send Bus Pup to family and friends. They get the download link and simple install steps."),
@@ -669,6 +681,73 @@ class MainActivity : Activity() {
         startActivity(base.setClassName(pkg, cls)); true
     } catch (e: Exception) {
         startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS, Uri.parse("package:$packageName"))); false
+    }
+
+    private fun feedbackDialog() {
+        if (!Feedback.enabled) { toast("Feedback isn't set up in this version yet."); return }
+        val box = LinearLayout(this).apply { orientation = LinearLayout.VERTICAL; setPadding(dp(20), dp(8), dp(20), 0) }
+        val kinds = listOf("🐞 Something's wrong" to "bug", "💡 Idea" to "idea", "💬 Other" to "feedback")
+        val kind = Spinner(this).apply {
+            adapter = ArrayAdapter(this@MainActivity, android.R.layout.simple_spinner_dropdown_item, kinds.map { it.first })
+        }
+        box.addView(kind)
+        val msg = EditText(this).apply {
+            hint = "What happened, or what would you like?"
+            minLines = 4; gravity = Gravity.TOP or Gravity.START
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_MULTI_LINE or InputType.TYPE_TEXT_FLAG_CAP_SENTENCES
+        }
+        box.addView(msg)
+        val who = EditText(this).apply {
+            hint = "Your name (optional)"; setSingleLine()
+            inputType = InputType.TYPE_CLASS_TEXT or InputType.TYPE_TEXT_FLAG_CAP_WORDS
+        }
+        box.addView(who)
+        box.addView(TextView(this).apply {
+            text = "Your app version and phone model are added automatically."; textSize = 12f
+            setPadding(0, dp(6), 0, 0)
+        })
+        val dlg = AlertDialog.Builder(this)
+            .setTitle("Send feedback")
+            .setView(ScrollView(this).apply { addView(box) })
+            .setPositiveButton("Send", null)
+            .setNegativeButton("Cancel", null)
+            .create()
+        dlg.setOnShowListener {
+            dlg.getButton(AlertDialog.BUTTON_POSITIVE).setOnClickListener {
+                val text = msg.text.toString().trim()
+                if (text.isEmpty()) { toast("Write a few words first."); return@setOnClickListener }
+                val (label, tag) = kinds[kind.selectedItemPosition]
+                val name = who.text.toString().trim()
+                val title = label.substringAfter(" ") + ": " + text.lineSequence().first().take(60)
+                val body = text + "\n\n---\n" + (if (name.isNotEmpty()) "From: $name\n" else "") + Feedback.deviceLine(this)
+                dlg.dismiss()
+                io.execute {
+                    val sent = Feedback.sendIssue(this, title, body, listOf("feedback", tag))
+                    ui.post { toast(if (sent) "Thanks! Sent 🐾" else "Saved. It'll send when you're back online.") }
+                }
+            }
+        }
+        dlg.show()
+    }
+
+    /** If the app crashed last time, offer to send the details. */
+    private fun offerCrashReport() {
+        val crash = Feedback.pendingCrash(this) ?: return
+        Feedback.clearCrash(this) // ask once
+        if (!Feedback.enabled) return
+        AlertDialog.Builder(this)
+            .setTitle("Bus Pup closed unexpectedly")
+            .setMessage("Send a report so it can be fixed? It includes technical details, your app version and phone model, but no stops or personal info.")
+            .setPositiveButton("Send report") { _, _ ->
+                io.execute {
+                    val first = crash.lineSequence().drop(2).firstOrNull().orEmpty().take(80)
+                    Feedback.sendIssue(this, "Crash: $first",
+                        "```\n$crash\n```\n\n${Feedback.deviceLine(this)}", listOf("crash", "bug"))
+                }
+                toast("Thanks! Report sent.")
+            }
+            .setNegativeButton("Not now", null)
+            .show()
     }
 
     private fun shareApp() {

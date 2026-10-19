@@ -37,6 +37,8 @@ android {
     }
 
     buildFeatures { buildConfig = true }
+    // Token that can only create issues in this repo, for in-app feedback (repo secret FEEDBACK_TOKEN)
+    defaultConfig { buildConfigField("String", "FEEDBACK_TOKEN", "\"${System.getenv("FEEDBACK_TOKEN") ?: ""}\"") }
 
     buildTypes {
         release {
